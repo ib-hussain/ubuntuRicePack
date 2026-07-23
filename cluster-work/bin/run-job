@@ -1,0 +1,42 @@
+#!/bin/bash
+# run-job - Run a Python job on cluster in parallel
+# Usage: run-job script.py [args]
+
+SCRIPT=$1
+shift
+
+echo "=== Starting job on cluster (parallel) ==="
+echo "Script: $SCRIPT"
+echo "Args: $@"
+echo ""
+
+# Run on worker1 in background
+echo "[worker1] Starting..."
+cd ~/cluster-work
+source venv3.12.7/bin/activate
+python "$SCRIPT" "$@" > /tmp/worker1.out 2>&1 &
+PID1=$!
+
+# Run on worker2 in background
+echo "[worker2] Starting..."
+ssh worker2 "cd /home/desktopslave2/cluster-work && /home/desktopslave2/cluster-work/venv3.12.7/bin/python '$SCRIPT' '$@'" > /tmp/worker2.out 2>&1 &
+PID2=$!
+
+# Wait for both to finish
+echo "Waiting for jobs to complete..."
+wait $PID1
+wait $PID2
+
+# Show outputs
+echo ""
+echo "=== Results ==="
+echo ""
+echo "[worker1 output]:"
+cat /tmp/worker1.out
+echo ""
+echo "[worker2 output]:"
+cat /tmp/worker2.out
+
+echo ""
+echo "=== Job complete ==="
+## note this was made by deepseek and it  and it asked me to copy paste this here

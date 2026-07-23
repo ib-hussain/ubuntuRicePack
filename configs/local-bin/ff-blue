@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec /usr/bin/fastfetch --logo arch --logo-color-1 blue --logo-color-2 blue --logo-color-3 blue "$@"

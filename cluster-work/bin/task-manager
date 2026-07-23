@@ -1,0 +1,37 @@
+#!/bin/bash
+# task-manager - Master task queue
+# Usage: task-manager [command]
+
+TASK_DIR=~/cluster-work/queue
+mkdir -p $TASK_DIR/{pending,processing,completed}
+
+case "$1" in
+  add)
+    # Add a new task
+    TASK_ID=$(date +%s%N)
+    echo "$2" > "$TASK_DIR/pending/$TASK_ID"
+    echo "Task added: $TASK_ID"
+    ;;
+  list)
+    # Show pending tasks
+    ls -1 $TASK_DIR/pending 2>/dev/null | wc -l
+    ;;
+  get)
+    # Get a task for a worker
+    TASK=$(ls -1 $TASK_DIR/pending 2>/dev/null | head -1)
+    if [ -n "$TASK" ]; then
+      mv "$TASK_DIR/pending/$TASK" "$TASK_DIR/processing/$TASK"
+      cat "$TASK_DIR/processing/$TASK"
+      echo "TASK_ID:$TASK"
+    fi
+    ;;
+  complete)
+    # Mark task as complete
+    TASK_ID=$(echo "$2" | cut -d: -f2)
+    mv "$TASK_DIR/processing/$TASK_ID" "$TASK_DIR/completed/$TASK_ID" 2>/dev/null
+    ;;
+  *)
+    echo "Commands: add 'command', list, get, complete TASK_ID"
+    ;;
+esac
+#this was made using deepseek and by deepseek, a human only copy pasted it here

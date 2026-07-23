@@ -1,0 +1,13 @@
+#!/bin/bash
+# cluster-run - Run a command on all workers
+# Usage: cluster-run "command"
+
+COMMAND="$1"
+
+echo "Running on worker1..."
+eval "$COMMAND"
+
+echo ""
+echo "Running on worker2..."
+ssh worker2 "$COMMAND"
+## note to anyone reading this later is that this script was made and given to me to copy and paste into this file by deepseek

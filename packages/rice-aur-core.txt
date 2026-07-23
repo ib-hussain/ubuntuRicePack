@@ -1,0 +1,9 @@
+# AUR packages required/preferred by the rice installer.
+# Installed with yay when available.
+
+google-chrome
+visual-studio-code-bin
+gnome-shell-extension-dash-to-dock-git
+ventoy-bin
+yay
+yay-debug

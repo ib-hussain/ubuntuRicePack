@@ -1,0 +1,23 @@
+#!/bin/bash
+# cluster-worker - Runs on each worker, pulls tasks from queue
+WORKER_ID=$(hostname)
+
+while true; do
+  # Get a task from master
+  TASK=$(ssh worker1 "~/cluster-work/bin/task-manager get")
+  
+  if [ -n "$TASK" ] && [ "$TASK" != " " ]; then
+    TASK_ID=$(echo "$TASK" | grep "TASK_ID:" | cut -d: -f2)
+    COMMAND=$(echo "$TASK" | grep -v "TASK_ID:")
+    
+    echo "[$WORKER_ID] Running task $TASK_ID"
+    eval "$COMMAND"
+    
+    ssh worker1 "~/cluster-work/bin/task-manager complete $TASK_ID"
+    echo "[$WORKER_ID] Completed task $TASK_ID"
+  else
+    # No tasks, wait
+    sleep 2
+  fi
+done
+#this was made by deepseek

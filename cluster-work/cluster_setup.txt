@@ -1,0 +1,107 @@
+You are my technical guide for building a small custom Linux compute cluster for ML/DL workloads. I need you to act like an expert systems engineer and walk me through everything step by step, in detail, without skipping assumptions, and without rushing ahead. We are starting from the pre-requisites stage before actual cluster setup, and you must guide me from there all the way to a working cluster.
+Overall goal
+I want to build a small distributed compute setup where I use my main laptop as the controller/master, and I offload computation to two separate Linux worker machines. The purpose of the cluster is mainly:
+•	machine learning
+•	deep learning
+•	model training
+•	preprocessing
+•	distributed Python workloads
+This is not a textbook lab-only MPI cluster. It is a practical custom cluster for real workload offloading, though we may still use MPI or other distributed tools for validation or learning.
+Final design choice
+We have already decided the operating systems and general structure:
+•	Master / controller machine: my main laptop running Windows with WSL Ubuntu 24.04 LTS
+•	Worker 1: a desktop running Ubuntu 22.04 LTS
+•	Worker 2: a laptop running Ubuntu 22.04 LTS
+Do not suggest changing this architecture unless something is completely impossible.
+Important constraints and facts
+1.	The master laptop using WSL Ubuntu is fixed. This is the only realistic option for the controller.
+2.	Both worker machines will use Ubuntu 22.04 LTS.
+3.	I want Python 3.12.7 on all machines.
+4.	I want to keep all datasets on my main laptop, because that is where I will download and manage them.
+5.	The two workers must be able to access and use those datasets over the network.
+6.	The desktop has no GPU.
+7.	The desktop currently has no direct internet connection.
+8.	The worker laptop has a very old NVIDIA GPU, probably from around 2010-12.
+9.	I have a LAN cable and may use the worker laptop to pass internet to the desktop through Ethernet.
+10.	I want both Linux workers configured for maximum CPU performance, not power saving:
+•	full CPU capacity
+•	all cores available
+•	no energy-saving behavior if avoidable
+•	I do not care about power usage, heat, fan noise, or efficiency
+11.	I want to use the master laptop mostly for normal usage and coordination, while pushing heavy compute loads to the workers.
+How you should guide me
+I want you to guide me in a strict sequence. Start from the pre-requisites stage, not from advanced cluster software.
+At each stage, you must:
+•	explain what we are doing
+•	explain why we are doing it
+•	give exact terminal commands
+•	tell me which machine each command should be run on
+•	tell me what output/result I should expect
+•	tell me how to verify success before moving on
+•	warn me about common mistakes
+•	adapt the next step based on results
+Do not dump everything at once. Guide me in a structured install-and-verify workflow.
+Current stage: start from pre-requisites
+We are starting specifically from the following pre-cluster prerequisites. Please begin here and take me through them in detail:
+1. Network topology and connectivity
+We need to establish a reliable network between:
+•	WSL master laptop
+•	Ubuntu worker laptop
+•	Ubuntu desktop
+The worker laptop may need to share internet to the desktop over Ethernet/LAN. Help me decide and configure the cleanest workable topology.
+2. IP addressing and hostname planning
+Help me assign stable addresses and hostnames for all machines. I want a simple, maintainable setup.
+3. SSH setup
+We need SSH working from the master to both workers, and ideally between workers too. Later we also want passwordless SSH.
+4. Python 3.12.7 setup
+Ubuntu 22.04 does not ship with Python 3.12 by default, so help me install Python 3.12.7 safely without breaking system Python.
+5. Time synchronisation
+Set up proper time sync so distributed operations behave consistently.
+6. Dataset access from workers
+Since datasets will stay on the main laptop, help me expose them to the workers in the most practical way for this setup. Prefer simple and reliable solutions first. You may consider SSHFS, SMB, NFS, rsync, or another option, but choose based on practicality for this architecture.
+7. Maximum CPU performance tuning
+On both worker machines, configure Linux to prioritize sustained performance rather than power efficiency. Help me set governors, check scaling behavior, and verify that the systems can actually use all cores under load.
+8. Basic base packages
+Install all essential packages needed before cluster tooling:
+•	SSH tools
+•	build tools
+•	monitoring tools
+•	filesystem/network tools
+•	Python environment tools
+Technical preferences
+•	Prefer practical solutions over theoretically perfect ones.
+•	Keep the setup beginner-friendly but technically correct.
+•	Avoid unnecessary complexity early on.
+•	Do not jump to Kubernetes, Slurm, or other heavy tooling unless we explicitly decide later.
+•	If there is a simpler v1 path, use it first.
+•	Assume the cluster will likely be CPU-focused at first.
+•	Treat the old NVIDIA GPU as optional.
+Likely later stages after prerequisites
+After the prerequisites are done, I will want you to continue with:
+•	passwordless SSH
+•	shared execution checks
+•	simple cross-node validation
+•	Python virtual environments or Conda-style env planning
+•	distributed execution framework selection
+•	probably Ray and/or MPI
+•	eventually distributed ML/DL workflows
+But do not start there yet unless I ask. First, complete the prerequisites properly.
+Response format I want from you
+For each stage, structure your answer like this:
+1.	Objective
+2.	Why it matters
+3.	Commands for each machine
+4.	Verification steps
+5.	Troubleshooting if something fails
+6.	What the next step will be
+Very important behavior instructions
+•	Do not assume anything worked unless I confirm it.
+•	Do not skip verification.
+•	Do not give vague advice like “just install X”.
+•	Do not replace my chosen architecture.
+•	Do not tell me to restart from scratch unless absolutely necessary.
+•	Be extremely detailed and explicit.
+•	If there are multiple options, recommend one clearly and explain why.
+•	Keep track of the role of each machine throughout the process.
+Now begin with Step 1: network topology and connectivity planning, using my exact setup above.
+

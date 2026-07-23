@@ -1,0 +1,150 @@
+{
+  "security.workspace.trust.untrustedFiles": "open",
+  "editor.unicodeHighlight.invisibleCharacters": false,
+  "redhat.telemetry.enabled": true,
+  "[html]": {
+    "editor.defaultFormatter": "mohd-akram.vscode-html-format"
+  },
+  "editor.formatOnSave": true,
+  "cmake.options.statusBarVisibility": "visible",
+  "explorer.confirmDelete": false,
+  "makefile.configureOnOpen": true,
+  "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+  "cmake.pinnedCommands": [
+    "workbench.action.tasks.configureTaskRunner",
+    "workbench.action.tasks.runTask"
+  ],
+  "notebook.formatOnSave.enabled": true,
+  "explorer.confirmDragAndDrop": false,
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": true,
+    "markdown": true,
+    "scminput": false,
+    "python": true,
+    "mysql": true,
+    "html": false
+  },
+  "liveServer.settings.donotVerifyTags": true,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "prettier.embeddedLanguageFormatting": "off",
+  "editor.minimap.maxColumn": 50,
+  "git.openRepositoryInParentFolders": "always",
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "workbench.localHistory.maxFileEntries": 100,
+  "workbench.localHistory.maxFileSize": 512,
+  "workbench.trustedDomains.promptInTrustedWorkspace": true,
+  "geminicodeassist.inlineSuggestions.enableAuto": true,
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js",
+    "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
+    "*.jsx": "${capture}.js",
+    "*.tsx": "${capture}.ts",
+    "tsconfig.json": "tsconfig.*.json",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock",
+    "*.sqlite": "${capture}.${extname}-*",
+    "*.db": "${capture}.${extname}-*",
+    "*.sqlite3": "${capture}.${extname}-*",
+    "*.db3": "${capture}.${extname}-*",
+    "*.sdb": "${capture}.${extname}-*",
+    "*.s3db": "${capture}.${extname}-*"
+  },
+  "notebook.cellExecutionTimeVerbosity": "verbose",
+  "notebook.lineNumbers": "on",
+  "git.ignoreRebaseWarning": true,
+  "python.createEnvironment.trigger": "off",
+  "extensions.webWorker": true,
+  "liveServer.settings.CustomBrowser": "chrome",
+  "terminal.integrated.gpuAcceleration": "on",
+  "database-client.autoSync": true,
+  "pgsql.serverGroups": [
+    {
+      "name": "Servers",
+      "id": "3C7135C5-122B-458C-9D87-B8F25B06EA2F",
+      "isDefault": true
+    }
+  ],
+  "pgsql.connections": [
+    {
+      "id": "167052E2-91BE-40A3-A528-B9A60166AA2C",
+      "groupId": "3C7135C5-122B-458C-9D87-B8F25B06EA2F",
+      "authenticationType": "SqlLogin",
+      "connectTimeout": 15,
+      "applicationName": "vscode-pgsql",
+      "clientEncoding": "utf8",
+      "sslmode": "require",
+      "savePassword": true,
+      "server": "aws-0-eu-west-3.pooler.supabase.com",
+      "user": "postgres.kumqhytmymzmbywlwepz",
+      "port": "6543",
+      "database": "postgres",
+      "password": "",
+      "profileName": "aws-0-eu-west-3.pooler.supabase.com, postgres (postgres.kumqhytmymzmbywlwepz)",
+      "sshPassword": "",
+      "expiresOn": 0
+    }
+  ],
+  "diffEditor.codeLens": true,
+  "pgsql.enableQueryHistoryCapture": false,
+  "explorer.confirmPasteNative": false,
+  "lldb.suppressUpdateNotifications": true,
+  "hexeditor.columnWidth": 32,
+  "hexeditor.showDecodedText": true,
+  "hexeditor.defaultEndianness": "little",
+  "hexeditor.inspectorType": "aside",
+  "workbench.editorAssociations": {
+    "*.copilotmd": "vscode.markdown.preview.editor",
+    "{hexdiff}:/**/*.*": "hexEditor.hexedit",
+    "*.o": "hexEditor.hexedit"
+  },
+  "security.allowedUNCHosts": [
+    "wsl.localhost"
+  ],
+  "editor.multiCursorLimit": 100000,
+  "files.autoSave": "afterDelay",
+  "liveServer.settings.port": 0,
+  "liveServer.settings.host": "localhost",
+  "editor.unicodeHighlight.ambiguousCharacters": false,
+  "jupyter.askForKernelRestart": false,
+  "dataWrangler.outputRenderer.columnInsights.displayByDefault": true,
+  "dataWrangler.outputRenderer.enabledTypes": {
+    "numpy.ndarray": true,
+    "builtins.list": true,
+    "builtins.dict": true,
+    "torch.Tensor": true,
+    "pyspark.sql.connect.dataframe.DataFrame": true,
+    "pyspark.sql.dataframe.DataFrame": true,
+    "polars.series.series.Series": true,
+    "polars.dataframe.frame.DataFrame": true,
+    "xarray.core.dataarray.DataArray": true,
+    "tensorflow.python.framework.ops.EagerTensor": true
+  },
+  "dataWrangler.panels.displayOnTabFocus": false,
+  "dataWrangler.defaultViewingFilterOptions": "advanced",
+  "dataWrangler.experiments.datatypes.pyspark": true,
+  "dataWrangler.experiments.autoDetectCsvDelimiter": true,
+  "dataWrangler.experiments.fastCsvParsing": true,
+  "workbench.colorTheme": "Visual Studio 2017 Dark - C++",
+  "python.terminal.useEnvFile": true,
+  "workbench.editor.enablePreview": false,
+  "python.analysis.typeCheckingMode": "basic"
+    "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.git": true,
+    "**/.venv": true,
+    "**/venv": true
+  }
+}

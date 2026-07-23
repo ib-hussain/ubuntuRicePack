@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=IB Wallpaper Rotator
+Exec=/home/ibrahim/.local/bin/ib-wallpaper-rotator
+X-GNOME-Autostart-enabled=true

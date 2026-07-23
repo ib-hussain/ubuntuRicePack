@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+choice=$(zenity \
+--list \
+--title="Power Profile" \
+--column="Mode" \
+"Battery Saver" \
+"Balanced" \
+"Performance" \
+"Maximum Performance")
+
+case "$choice" in
+
+    "Battery Saver")
+        ib-power-mode set powersaver
+        ;;
+
+    "Balanced")
+        ib-power-mode set balanced
+        ;;
+
+    "Performance")
+        ib-power-mode set performance
+        ;;
+
+    "Maximum Performance")
+        ib-power-mode set maximum
+        ;;
+esac

@@ -1,0 +1,493 @@
+{
+    "userDataProfilesMigration": true,
+    "profileAssociations": {
+        "workspaces": {
+            "file:///d%3A/": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/ICT%20Lab": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/ICT%20Project": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Documents/Codes/ICT_PROJECT": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/ict-project": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/semi-final": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/snake2": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Documents/Codes": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/IDS%20Lab/Lab%204": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/New%20folder": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Python%20Development": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/projects/helloworld": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/C%2B%2B%20Development": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/23i-2526_DS_C": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/SFML_Project": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/SFML": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Documents/C%2B%2B%20Development": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Documents/Functional%20English": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/sf": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/helloworld": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/New%20sfml": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/GraphicDev": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/New%20folder/C%2B%2B%20Development": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/GraphicDev/C%2B%2B%20Dev": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/OOP_Project": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/C%2B%2B%20Dev": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/DSA%20Lab/Lab%204": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/MyBlazorApp": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/test": "__default__profile__",
+            "file:///c%3A/msys64/mingw64/bin": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/AppData/Local/Programs/Python/Python312/Scripts": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Site": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Cinemago": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Site/py": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Cinemago1": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Cinemago0": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Cinemago/Cinemago.Web": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Cinemago.Web": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/movrec": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Documentation/Iteration2/Latex": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Documentation/Iteration2/Cinemago_Latex_Project": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/Documentation/Iteration3": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Software%20Project/acde": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/C%2B%2B%20Dev/Network%20Emulator": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Network%20Emulator": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Network-Emulator": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Network-Emulator/Network-Emulator": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/GameDev": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Site": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Projects.py": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/CInemago": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/GameBoy": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Game-Of-Life": "__default__profile__",
+            "file:///c%3A/users/ibrahim/appdata/local/programs/python/python312/lib/site-packages": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Network-Emulator": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Webdev%20Task": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/ib-hussain.github.io": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Afiniti%20Machine%20Learning": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Afiniti%20ML": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Afiniti-ML": "__default__profile__",
+            "file:///c%3A/users/ibrahim/appdata/local/temp/pip-req-build-qrfgkkqb": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Movie-Genre-Detection-Model": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/udemy-dl-master": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/CppUnit": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/googletest": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/MyGTestProject": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Internship": "__default__profile__",
+            "file:///c%3A/": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Internship/Multi-Agentic_Health_Assistant": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/ib-hussain": "__default__profile__",
+            "file:///d%3A/The%20AI%20Engineer%20Course%202025%20Complete%20AI%20Engineer%20Bootcamp/35%20-%20LangChain%20Module%20Introduction/Files": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Transcription": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Repositories/Youtube-Video-Download-Transcribe": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Desktop": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/DAV%20Lab": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/MySQL": "__default__profile__",
+            "file:///c%3A/apktool/cars_fast_as_lightning": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/AssemblyDev": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/OS%20Lab/Lab1": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/DB%20Lab/Lab2": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/DAV%20Lab/Lab2": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/OS%20Lab/Lab2": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/DB%20Lab/Lab3": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/DAV%20Lab/Lab1": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/University/DAV%20Lab/Lab3": "__default__profile__",
+            "file:///c%3A/Users/Ibrahim/Downloads/Assembler": "__default__profile__",
+            "file:///d%3A/Downloads/Internship/Multi-Agentic_Health_Assistant": "__default__profile__",
+            "file:///d%3A/older": "__default__profile__",
+            "file:///d%3A/Downloads/new": "__default__profile__",
+            "file:///d%3A/Downloads/Assembler": "__default__profile__",
+            "file:///d%3A/Downloads/C%2B%2B%20Dev": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab3": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab4": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB%20Lab/Lab5": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Lab5": "__default__profile__",
+            "file:///d%3A/Downloads/OS": "__default__profile__",
+            "file:///d%3A/Downloads/Assembler/Assembly": "__default__profile__",
+            "file:///f%3A/": "__default__profile__",
+            "file:///d%3A/Downloads/Apps/Arch/offline": "__default__profile__",
+            "file:///d%3A/Downloads/wsl": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS/Assignment1": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Lab7": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB%20Lab/Lab7": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/Multi-Agentic_Health_Assistant": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/OperatingSystems_ISO": "__default__profile__",
+            "file:///d%3A/Downloads/WhatsApp%20Chat%20with%20Amna%20Rana": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB/Iteration1": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Assignment1": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab7/Task2": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab7": "__default__profile__",
+            "vscode-remote://wsl%2Bubuntu/home/ibrahim_hussain": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/Cinemago": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB%20Lab/Lab8": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB%20Lab/Lab9": "__default__profile__",
+            "file:///d%3A/Downloads/Assembly": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab9": "__default__profile__",
+            "vscode-remote://wsl%2Bubuntu/home/ibrahim_hussain/C%2B%2B%20Developement": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS/Assignment2": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB%20Lab/Lab10": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/ib-hussain.github.io/js": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/ib-hussain.github.io/css": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/ib-hussain.github.io/pictures": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB/Assignment2": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Mid": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab7Signals": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/Network-Emulator": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/3movieCollectors": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB%20Lab/Lab11": "__default__profile__",
+            "file:///c%3A/Users/ibrahim/Downloads/Task%2011": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Lab11": "__default__profile__",
+            "file:///h%3A/": "__default__profile__",
+            "file:///g%3A/": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/ib-hussain": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB%20Lab": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab10": "__default__profile__",
+            "file:///c%3A/Users/ibrahim/Downloads/Neohack": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Mid/RawData": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB/Assignment3": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab11": "__default__profile__",
+            "file:///d%3A/Downloads/NeoHacks": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Project": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Assignment2": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Assignment2/Task1": "__default__profile__",
+            "file:///d%3A/Downloads/University/DAV%20Lab/Assignment2/Task2": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/SubwaySurfers": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab12": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab8Signals": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Project": "__default__profile__",
+            "file:///g%3A/Project": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/i232626_i232517_i232568": "__default__profile__",
+            "file:///d%3A/Downloads/ProjectOOP/ProjectOOP": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/ib-hussain.github.io": "__default__profile__",
+            "file:///d%3A/Downloads/University/COAL/Project": "__default__profile__",
+            "file:///d%3A/Downloads/University/COAL%20Lab/Project": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/vscode": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/writers-block": "__default__profile__",
+            "file:///d%3A/Downloads/University/OS%20Lab/Lab13": "__default__profile__",
+            "file:///d%3A/Downloads/mounti": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI%20Lab/Lab1": "__default__profile__",
+            "file:///d%3A/Downloads/University/DB/Iteration2": "__default__profile__",
+            "file:///d%3A/Downloads/University/PDC": "__default__profile__",
+            "file:///d%3A/Downloads/University/PDC/Assignment1": "__default__profile__",
+            "file:///d%3A/Downloads/University/Data%20Mining/Task1": "__default__profile__",
+            "file:///c%3A/Users/ibrahim/Downloads/data%20vis": "__default__profile__",
+            "file:///c%3A/Users/ibrahim/Downloads/Hackathon": "__default__profile__",
+            "file:///c%3A/Users/ibrahim/Downloads/hackathon234576": "__default__profile__",
+            "file:///d%3A/Downloads/University/NLP/Assignment1": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/Arduino/led_design": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/Arduino": "__default__profile__",
+            "file:///d%3A/Downloads/University/DeepLearning": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI%20Lab/Lab5": "__default__profile__",
+            "file:///d%3A/Downloads/University/Data%20Mining/Task3": "__default__profile__",
+            "file:///d%3A/Downloads/University/DeepLearning/Project": "__default__profile__",
+            "file:///d%3A/Downloads/University/DeepLearning/Project/fin-glassbox": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI/Assignment1": "__default__profile__",
+            "file:///d%3A/Downloads/University/Data%20Mining/Assignment1": "__default__profile__",
+            "file:///d%3A/Downloads/University/DeepLearning/fin-glassbox": "__default__profile__",
+            "file:///d%3A/Games/AI/Ollama": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI%20Lab/Lab8": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/TCGA-Integrative-Analysis": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/data%20vis%20competition": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/social-electoral-dynamics": "__default__profile__",
+            "file:///d%3A/Downloads/University/Data%20Mining/Task4": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/secret_to_happiness": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/TCGA-Integrative-Analysis/images": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/disaster-recovery-analysis": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/disaster-recovery-analysis/pictures": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/ib-hussain.github.io/assets": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI%20Lab/Lab9": "__default__profile__",
+            "file:///d%3A/Downloads/University/PDC/Assignment2": "__default__profile__",
+            "file:///d%3A/Downloads/University/Data%20Mining/Assignment2": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI%20Lab/Lab10": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI/Assignment2": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI%20Lab/Lab11": "__default__profile__",
+            "file:///d%3A/Games/AI": "__default__profile__",
+            "file:///d%3A/Games/AI/NLP-Module": "__default__profile__",
+            "file:///d%3A/Games/AI/LLM-Module": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/raw-overfitting-transformer": "__default__profile__",
+            "file:///d%3A/Downloads/University/Data%20Mining/Assignment3": "__default__profile__",
+            "file:///c%3A/Users/ibrahim/Downloads/fin-glassbox": "__default__profile__",
+            "file:///d%3A/Downloads/University/PDC/Assignment3": "__default__profile__",
+            "file:///d%3A/Downloads/University/PDC/frag-aware-nlp-scheduler": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/fin-glassbox": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI/Project": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI/Project/AeroNet_Lite_Project": "__default__profile__",
+            "file:///d%3A/Downloads/University/AI%20Lab": "__default__profile__",
+            "file:///d%3A/Downloads": "__default__profile__",
+            "file:///e%3A/vscode_backup/User/snippets": "__default__profile__",
+            "file:///d%3A/Downloads/Repositories/archRicePack": "__default__profile__"
+        },
+        "emptyWindows": {}
+    },
+    "profileAssociationsMigration": true,
+    "telemetry.machineId": "574083b8fd9fb435dae5c8cf7565a5b84d7b6a946a25f663a5f68ce97a56632f",
+    "backupWorkspaces": {
+        "workspaces": [],
+        "folders": [
+            {
+                "folderUri": "file:///d%3A/Downloads/Repositories/archRicePack"
+            }
+        ],
+        "emptyWindows": [
+            {
+                "backupFolder": "1780374352832"
+            }
+        ]
+    },
+    "windowControlHeight": 35,
+    "theme": "vs-dark",
+    "themeBackground": "#1e1e1e",
+    "windowSplash": {
+        "zoomLevel": 0,
+        "baseTheme": "vs-dark",
+        "colorInfo": {
+            "foreground": "#cccccc",
+            "background": "#1e1e1e",
+            "editorBackground": "#1e1e1e",
+            "titleBarBackground": "#3c3c3c",
+            "activityBarBackground": "#333333",
+            "sideBarBackground": "#252526",
+            "statusBarBackground": "#007acc",
+            "statusBarNoFolderBackground": "#68217a"
+        },
+        "layoutInfo": {
+            "sideBarSide": "left",
+            "editorPartMinWidth": 220,
+            "titleBarHeight": 35,
+            "activityBarWidth": 48,
+            "sideBarWidth": 300,
+            "auxiliaryBarWidth": 0,
+            "statusBarHeight": 22,
+            "windowBorder": false
+        }
+    },
+    "windowsState": {
+        "lastActiveWindow": {
+            "folder": "file:///d%3A/Downloads/Repositories/archRicePack",
+            "backupPath": "C:\\Users\\ibrahim\\AppData\\Roaming\\Code\\Backups\\7e038e5b92ed25c85f7eccb69c57c61d",
+            "uiState": {
+                "mode": 0,
+                "x": 80,
+                "y": 0,
+                "width": 1440,
+                "height": 860
+            }
+        },
+        "openedWindows": []
+    },
+    "telemetry.sqmId": "{57A8CAA8-68D0-475A-BD4E-9BD9F3CC71E7}",
+    "telemetry.devDeviceId": "fc2b5507-6fb6-4ff1-875f-0e59ce11a227",
+    "windowSplashWorkspaceOverride": {
+        "layoutInfo": {
+            "auxiliarySideBarWidth": [
+                351,
+                []
+            ],
+            "sideBarWidth": 300,
+            "auxiliaryBarWidth": 300,
+            "workspaces": {
+                "7a6534eef184d0b86e076c0b9fc8c037": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "d42aef0cc6e4c0a5496b9c79b9fd62f4": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "115d8644fdeb02348cf754fe2df8eb17": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "e893fa19b49166b66517088a423fa254": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "641f92a544d8259337a6512f4c6b40f7": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "36db046696f6605a0997839212cd681c": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "f497620de2f9d34b1a5b120e7e8c5408": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "2863964f8c7e4576d12fc5639d48062d": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "660a0ae09891c56a83d855f7049798cd": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "6a8f44732d4b8bffa381167e849f5edb": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "9053d13f1098d379d67d0ab3f7852537": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "dfd4b2684e3f30765979d6077628c512": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "e4d015622da7054be814cdf0721ac386": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "80f10d5a7bc13800ffd20154d7162622": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "02929e591aa590f70201750ad1d30495": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "c1d6a3f19c6066ae21cdcebc1435de46": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "6e9a9ce03623f85a5ff55e7a9e92ef42": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "a09ec70a0bffe279b912e04b8c0308ac": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "f4de3eb6696213f3df62e80a50aaa331": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "d8afe0369c01c84dbbf5132c5a026cad": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "3c0c2e34b630927f52d87f4080ac70b9": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "d5472c89db1875c070651fa8ebed6120": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "1a79325b6498ed48d8a95d4db1dc2b5a": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "7b7ba4fb1254bf655e4c20b66a2dae0e": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "bded431d5e1427e53fd062780bf3bb35": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "1a4d4e6f459f70db2e95f4715bc29f46": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "be11c26eae7d51f28d4c8390ac31ff7f": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "5126f0c0bd6493354d6266001de262ef": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "5a534b96129be10b12c10ce15e9d19bd": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "720ee34e89fae3c0d0ace799ebfe3291": {
+                    "sideBarVisible": false,
+                    "auxiliaryBarVisible": false
+                },
+                "1a5c5ec3ea2e0b776048a6448e0cfa23": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "7006c63aa373ac2fea925b624ebd2989": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "64d2d328c2021a7c4348372df85893eb": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "dc52f3e543cdf08faf27488b3c9401e6": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "d52fdcede734aaaef19096ca3c2990d3": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "456845d2273d26171a8a7d38a16f0895": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "c8d86739de03806aca04e1a9aeb71d72": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "75ab99203b5fb2c1b0d6e4718f7e952b": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "2e8834af9ce5bd5c98f8224085cbaf32": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "8a29f4cab32ac8c0f743271a6ca23a89": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "1892ff01454f6595a3565b04b9f08022": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "d8e49c601ca96cc8ef65d9a004e335be": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "e0594827b9d2c7f187e6ebef5efbcf82": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "e70331a2c0937d2d91937cbd33235033": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "02aaf561cee63e332c14e8d1151f5ab3": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "980682ec88cd372952f784d9cacf50ed": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "ccc7744204d7fafd8e512d1e5dd42a54": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "2da3b63d8026f2be58d35df05f81fb50": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                },
+                "0b63a119df220355e7249406cfa532c3": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": true
+                },
+                "9accd01282d290405bf5c3164545bef3": {
+                    "sideBarVisible": true,
+                    "auxiliaryBarVisible": false
+                }
+            }
+        }
+    }
+}

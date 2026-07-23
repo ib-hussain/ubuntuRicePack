@@ -1,0 +1,12 @@
+{
+  "name": "System Monitor",
+  "description": "Monitor system from the top bar",
+  "uuid": "@uuid@",
+  "gettext-domain": "@gettext_domain@",
+  "settings-schema": "@gschemaname@",
+  "shell-version": [
+    "@shell_current@"
+  ],
+  "version-name": "@version@",
+  "url": "@url@"
+}

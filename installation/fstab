@@ -1,0 +1,18 @@
+# Static information about the filesystems.
+# See fstab(5) for details.
+
+# <file system> <dir> <type> <options> <dump> <pass>
+# /dev/sdb4
+UUID=182690c4-85bb-438d-8366-563046740d98	/         	ext4      	rw,relatime	0 1
+
+# /dev/sdb2
+UUID=6ACC-B0AF      	/boot     	vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro	0 2
+
+# /dev/sdb3
+UUID=969eab0b-556e-499b-8553-8f875b409539	none      	swap      	defaults  	0 0
+
+# /dev/sdb1 - Data Drive
+UUID=E278D03778D00C63    /DataDrive    ntfs-3g    defaults,nofail,uid=1000,gid=1000,dmask=022,fmask=133    0    0
+
+# /dev/sda2 - Windows OS Drive
+UUID=D2AA9791AA977129    /Windows      ntfs-3g    defaults,nofail,uid=1000,gid=1000,dmask=022,fmask=133    0    0

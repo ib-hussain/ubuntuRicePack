@@ -1,0 +1,11 @@
+#dashtodockContainer .show-apps .overview-icon,
+#dashtodockContainer .show-apps .show-apps-icon,
+#dash .show-apps .overview-icon,
+#dash .show-apps .show-apps-icon,
+.show-apps .overview-icon,
+.show-apps .show-apps-icon {
+    background-image: url("icons/arch-logo.png");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
