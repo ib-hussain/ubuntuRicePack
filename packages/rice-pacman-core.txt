@@ -108,6 +108,10 @@ flameshot
 fzf
 gdm
 git
+
+google-chrome
+visual-studio-code-bin
+ventoy-bin
 gnome-browser-connector
 gnome-control-center
 gnome-screenshot

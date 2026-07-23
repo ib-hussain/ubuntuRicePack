@@ -30,7 +30,7 @@ if ! shopt -oq posix; then
   fi
 fi
 # ARCH TERMINAL PROMPT:
-PS1='[\u@\h \W]\$ '
+# PS1='[\u@\h \W]\$ '
 # UBUNTU TERMINAL PROMPT:
 # uncomment for a colored prompt, if the terminal has the capability; turned off by default to not distract the user: the focus in a terminal window
 # should be on the output of commands, not on the prompt
@@ -59,20 +59,20 @@ xterm*|rxvt*)
 *)
     ;;
 esac
-# ARCH shortcuts
-alias root='sudo -i'
-alias cls='clear'
-alias systemctl='sudo systemctl'
-alias turnoff='sudo poweroff'
-alias instally='sudo pacman -S --noconfirm'
-alias instaly='sudo pacman -S --noconfirm'
-alias pacman='sudo pacman'
-alias remove='sudo pacman -Rns'
-alias install='sudo pacman -S'
-alias install-y='sudo pacman -S --needed --noconfirm'
-alias please='sudo'
-alias ports='ss -tulpen'
-alias myip='ip -brief addr'
+# # ARCH shortcuts
+# alias root='sudo -i'
+# alias cls='clear'
+# alias systemctl='sudo systemctl'
+# alias turnoff='sudo poweroff'
+# alias instally='sudo pacman -S --noconfirm'
+# alias instaly='sudo pacman -S --noconfirm'
+# alias pacman='sudo pacman'
+# alias remove='sudo pacman -Rns'
+# alias install='sudo pacman -S'
+# alias install-y='sudo pacman -S --needed --noconfirm'
+# alias please='sudo'
+# alias ports='ss -tulpen'
+# alias myip='ip -brief addr'
 
 # pyenv configuration
 export PYENV_ROOT="$HOME/.pyenv"
@@ -96,17 +96,16 @@ if [[ -z "${RICE_FASTFETCH_SHOWN:-}" && ! -f "$HOME/.no_fastfetch" ]]; then
     export RICE_FASTFETCH_SHOWN=1
     ff-blue
 fi
-
-if command -v eza >/dev/null 2>&1; then
-    alias ls='eza --icons=auto --group-directories-first'
-    # alias ll='eza -lah --icons=auto --group-directories-first --git'
-    alias la='eza -a --icons=auto --group-directories-first'
-    alias lt='eza --tree --level=2 --icons=auto --group-directories-first'
-fi
-
-if command -v zoxide >/dev/null 2>&1; then
-    eval "$(zoxide init bash)"
-fi
+# Uncomment if safe on ubuntu
+# if command -v eza >/dev/null 2>&1; then
+#     alias ls='eza --icons=auto --group-directories-first'
+#     # alias ll='eza -lah --icons=auto --group-directories-first --git'
+#     alias la='eza -a --icons=auto --group-directories-first'
+#     alias lt='eza --tree --level=2 --icons=auto --group-directories-first'
+# fi
+# if command -v zoxide >/dev/null 2>&1; then
+#     eval "$(zoxide init bash)"
+# fi
   
 export EDITOR="nano"
 
@@ -116,47 +115,47 @@ export EDITOR="nano"
 # ~/.bashrc: executed by bash(1) for non-login shells. see /usr/share/doc/bash/examples/startup-files (in the package bash-doc) for examples
 
 # If not running interactively, don't do anything
-# case $- in
-#     *i*) ;;
-#       *) return;;
-# esac
+case $- in
+    *i*) ;;
+      *) return;;
+esac
 # don't put duplicate lines or lines starting with space in the history. See bash(1) for more options
-# HISTCONTROL=ignoreboth
+HISTCONTROL=ignoreboth
 # append to the history file, don't overwrite it
-# shopt -s histappend
+shopt -s histappend
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-# HISTSIZE=1000
-# HISTFILESIZE=2000
+HISTSIZE=1000
+HISTFILESIZE=2000
 # check the window size after each command and, if necessary, update the values of LINES and COLUMNS.
-# shopt -s checkwinsize
+shopt -s checkwinsize
 # If set, the pattern "**" used in a pathname expansion context will
 # match all files and zero or more directories and subdirectories.
-#shopt -s globstar
+shopt -s globstar
 # make less more friendly for non-text input files, see lesspipe(1)
-# [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
-# set variable identifying the chroot you work in (used in the prompt below)
-# if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-#     debian_chroot=$(cat /etc/debian_chroot)
-# fi
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
 # set a fancy prompt (non-color, unless we know we "want" color)
-# case "$TERM" in
-#     xterm-color|*-256color) color_prompt=yes;;
-# esac
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
-# alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
 
 # Ubuntu shortcuts
-# alias root='sudo -i'
-# alias cls='clear'
-# alias systemctl='sudo systemctl'
-# alias journalctl='sudo journalctl'
-# alias turnoff='sudo poweroff'
-# alias instally='sudo apt install -y'
-# alias instaly='sudo apt install -y'
-# alias pacman='sudo apt '
-# alias remove='sudo apt purge '
-# alias auto-remove='sudo apt autoremove'
-# alias install='sudo apt install'
-# alias install-y='sudo apt install -y'
-# alias please='sudo'
+alias root='sudo -i'
+alias cls='clear'
+alias systemctl='sudo systemctl'
+alias journalctl='sudo journalctl'
+alias turnoff='sudo poweroff'
+alias instally='sudo apt install -y'
+alias instaly='sudo apt install -y'
+alias pacman='sudo apt '
+alias remove='sudo apt purge '
+alias auto-remove='sudo apt autoremove'
+alias install='sudo apt install'
+alias install-y='sudo apt install -y'
+alias please='sudo'
