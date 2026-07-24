@@ -11,6 +11,8 @@ export REPO_ROOT="$ROOT_DIR"
 
 # shellcheck source=scripts/00-common.sh
 source "$ROOT_DIR/scripts/00-common.sh"
+# Give every child stage one run identifier, log, backup tree, and report set.
+export RICE_RUN_ID="$RUN_ID"
 
 MODE="${RICE_INSTALL_MODE:-auto}"
 HOST_NAME="${RICE_HOSTNAME:-ibLaptop}"
@@ -22,6 +24,9 @@ CONFIGURE_HOSTNAME="${RICE_CONFIGURE_HOSTNAME:-1}"
 INSTALL_PYENV="${RICE_INSTALL_PYENV:-1}"
 SKIP_PACKAGES=0
 SKIP_VSCODE=0
+SKIP_NERD_FONTS=0
+SKIP_VENTOY=0
+STRICT_MODE=0
 
 usage() {
     cat <<'USAGE'
@@ -47,6 +52,10 @@ System options:
   --skip-python              Do not install/build pyenv Python
   --skip-packages            Skip apt and external package installation
   --skip-vscode              Skip restoration of VS Code data
+  --skip-nerd-fonts          Skip verified upstream Nerd Font downloads
+  --skip-ventoy              Skip the independent upstream Ventoy install
+  --strict                   Fail on unavailable packages, external installers,
+                             Nerd Fonts, GNOME mismatches, or final audit errors
 
 Important:
   - Run as the normal user, not with sudo.
@@ -100,6 +109,18 @@ while [[ $# -gt 0 ]]; do
             SKIP_VSCODE=1
             shift
             ;;
+        --skip-nerd-fonts)
+            SKIP_NERD_FONTS=1
+            shift
+            ;;
+        --skip-ventoy)
+            SKIP_VENTOY=1
+            shift
+            ;;
+        --strict)
+            STRICT_MODE=1
+            shift
+            ;;
         --help | -h)
             usage
             exit 0
@@ -126,6 +147,22 @@ case "$MODE" in
 esac
 
 export RICE_INSTALL_MODE="$MODE"
+export RICE_PYTHON_VERSION="$PYTHON_VERSION"
+
+if [[ "$SKIP_NERD_FONTS" == "1" ]]; then
+    export INSTALL_NERD_FONTS=0
+fi
+if [[ "$SKIP_VENTOY" == "1" ]]; then
+    export INSTALL_VENTOY=0
+fi
+if [[ "$STRICT_MODE" == "1" ]]; then
+    export STRICT_PACKAGES=1
+    export STRICT_EXTERNALS=1
+    export STRICT_NERD_FONTS=1
+    export STRICT_GNOME_VERIFY=1
+    export STRICT_FINAL_VERIFY=1
+fi
+
 require_normal_user
 require_ubuntu
 
@@ -289,10 +326,10 @@ fi
 log "============================================================"
 log "UbuntuRicePack installation completed in $MODE mode."
 log "Log file: $LOG_FILE"
+log "Verification reports: $STATE_DIR/reports"
 if [[ "$MODE" == "desktop" ]]; then
     log "Log out and back in once to reload GNOME Shell extensions."
 fi
 log "Local AI was not installed. To add it independently, run:"
 log "  bash scripts/10-setup-local-ai-ollama-openwebui.sh"
 log "============================================================"
-

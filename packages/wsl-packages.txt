@@ -1,67 +1,125 @@
-# Ubuntu repository packages for WSL mode.
-# GNOME, themes, bare-metal hardware services, and Local AI are excluded.
-# External eza, Starship, and pyenv setup is performed by the scripts.
+# ubuntuRicePack WSL packages
+# Target: Ubuntu 26.04 LTS (Resolute) under WSL 2
+# Translated from the Arch WSL pacman inventory on 2026-07-24.
+#
+# Every uncommented line is an APT package verified in the official Ubuntu
+# Resolute package index. The installer should ignore blank lines and lines
+# beginning with '#'.
+#
+# Required Ubuntu components: main, universe, multiverse.
+# Policy: CLI-focused, no Snap packages.
+#
+# Important command-name differences to handle later in the terminal script:
+#   Arch `bat` -> Ubuntu package `bat`, command `/usr/bin/batcat`
+#   Arch `fd`  -> Ubuntu package `fd-find`, command `/usr/bin/fdfind`
+# `tealdeer` supplies the `tldr` command.
 
-# Base and development
+# ---------------------------------------------------------------------------
+# Base and build tools
+# Arch: base-devel -> build-essential
+# Arch: python -> python3
 build-essential
 git
 curl
 wget
-ca-certificates
-gpg
-rsync
 unzip
 zip
 python3
 python3-pip
 python3-venv
 less
-nano
 sudo
+nano
+tree
+ca-certificates
+gnupg
 bash-completion
+pkg-config
 
-# Python-build dependencies for pyenv
+# ---------------------------------------------------------------------------
+# pyenv and CPython build dependencies
+# Arch runtime/development package translations:
+#   openssl  -> openssl + libssl-dev
+#   zlib     -> zlib1g-dev
+#   xz       -> xz-utils + liblzma-dev
+#   bzip2    -> bzip2 + libbz2-dev
+#   libffi   -> libffi-dev
+#   readline -> libreadline-dev
+#   sqlite   -> sqlite3 + libsqlite3-dev
+#   tk       -> tk-dev
+#   ncurses  -> libncurses-dev
+pyenv
+openssl
 libssl-dev
 zlib1g-dev
-libbz2-dev
-libreadline-dev
-libsqlite3-dev
-libncurses-dev
-libffi-dev
+xz-utils
 liblzma-dev
+bzip2
+libbz2-dev
+libffi-dev
+libreadline-dev
+sqlite3
+libsqlite3-dev
+tk-dev
+libncurses-dev
 libxml2-dev
 libxmlsec1-dev
-xz-utils
-tk-dev
 
-# Shell and CLI toolkit
-zsh
-fastfetch
+# ---------------------------------------------------------------------------
+# Modern command-line tools
+# Arch: fd -> fd-find
+# Arch: tldr -> tealdeer
+# Arch: p7zip + 7zip -> 7zip (p7zip was superseded)
 btop
 htop
+eza
 bat
 fd-find
 ripgrep
 fzf
 zoxide
 jq
-tree
 ncdu
-tldr
+tealdeer
 chafa
 7zip
-cmatrix
-sl
-bc
+unrar
 
-# Transfer, archives, and utilities
-openssh-client
+# ---------------------------------------------------------------------------
+# Shell, prompt, and system information
+zsh
+starship
+fastfetch
+
+# ---------------------------------------------------------------------------
+# File transfer and remote access
+rsync
 sshfs
 smbclient
 magic-wormhole
-imagemagick
 
-# Containers for general development
+# ---------------------------------------------------------------------------
+# Containers
+# Arch: docker -> docker.io
+# Arch: docker-compose -> docker-compose-v2
+# Native services require systemd enabled in /etc/wsl.conf. If Docker Desktop
+# integration owns the daemon, the later installer should avoid starting a
+# second Docker daemon inside WSL.
 docker.io
 docker-compose-v2
 
+# ---------------------------------------------------------------------------
+# Image handling and small terminal utilities
+imagemagick
+fontconfig
+sl
+cmatrix
+
+# ---------------------------------------------------------------------------
+# Deliberately not installable from this APT-only list
+#
+# ollama
+#   No package exists in Ubuntu's archive. Use Ollama's upstream Linux
+#   installer in the dedicated local-AI script, and only after deciding whether
+#   Ollama should run inside WSL or on the Windows host.
+#   Official instructions: https://docs.ollama.com/linux

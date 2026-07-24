@@ -1,6 +1,16 @@
-# Complete extension inventory from the best Arch GNOME export.
-# dash-to-dock@micxgx.gmail.com is translated to Ubuntu Dock because both use
-# org.gnome.shell.extensions.dash-to-dock settings and must not run together.
+# ubuntuRicePack GNOME extension inventory
+#
+# This is the complete extension inventory exported from Ibrahim's configured
+# Arch GNOME 50 desktop. scripts/04-setup-extensions.sh decides where each
+# extension comes from and which subset is enabled.
+#
+# Sources:
+#   - arch-dock-icon@ib-hussain is the only extension kept in this repository.
+#   - Hide Top Bar and Start Overlay are downloaded from extensions.gnome.org.
+#   - The gcampax.github.com extensions come from Ubuntu's
+#     gnome-shell-extensions package.
+#   - On Ubuntu, dash-to-dock@micxgx.gmail.com is an inventory alias only.
+#     ubuntu-dock@ubuntu.com is installed and enabled in its place.
 
 arch-dock-icon@ib-hussain
 hidetopbar@mathieu.bidon.ca
@@ -19,5 +29,4 @@ user-theme@gnome-shell-extensions.gcampax.github.com
 window-list@gnome-shell-extensions.gcampax.github.com
 windowsNavigator@gnome-shell-extensions.gcampax.github.com
 workspace-indicator@gnome-shell-extensions.gcampax.github.com
-ubuntu-dock@ubuntu.com
-
+dash-to-dock@micxgx.gmail.com

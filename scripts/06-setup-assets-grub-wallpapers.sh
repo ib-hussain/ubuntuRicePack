@@ -26,6 +26,10 @@ FETCH_ROOT=""
 
 [[ "$WALLPAPER_INTERVAL" =~ ^[1-9][0-9]*$ ]] ||
     fail "RICE_WALLPAPER_INTERVAL must be a positive integer."
+[[ "$WALLPAPER_REPO_PATH" != /* &&
+    "$WALLPAPER_REPO_PATH" != *".."* &&
+    "$WALLPAPER_REPO_PATH" != -* ]] ||
+    fail "RICE_WALLPAPER_REPO_PATH must be a safe relative repository path."
 
 cleanup_fetch() {
     if [[ -n "$FETCH_ROOT" &&
@@ -282,11 +286,63 @@ apply_first_wallpaper() {
     gs_set org.gnome.desktop.screensaver picture-uri "'$uri'"
 }
 
+write_asset_report() {
+    local report_dir="$STATE_DIR/reports"
+    local report_file="$report_dir/assets-wallpapers-$RUN_ID.tsv"
+    local wallpaper_count=0
+    local service_state="not-enabled"
+    local account_state="missing"
+    local grub_state="not-configured"
+
+    mkdir -p -- "$report_dir"
+    wallpaper_count="$(
+        find "$WALLPAPER_DEST" -type f \
+            \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+                -o -iname '*.webp' \) 2>/dev/null |
+            wc -l
+    )"
+    [[ -f "$HOME/.face" ]] && account_state="installed"
+    if run_root test -f /boot/grub/bg.png &&
+        run_root test -f /etc/default/grub.d/99-ubuntu-rice-pack.cfg
+    then
+        grub_state="configured"
+    fi
+    if systemctl --user is-enabled rice-wallpaper-rotator.service \
+        >/dev/null 2>&1
+    then
+        service_state="enabled"
+    fi
+
+    {
+        printf 'asset\tsource\tdestination\tstatus\n'
+        printf 'account-picture\t%s\t%s\t%s\n' \
+            "$REPO_ROOT/configs/.face or assets/ib.png" \
+            "$HOME/.face" \
+            "$account_state"
+        printf 'grub-artwork\t%s\t%s\t%s\n' \
+            "$REPO_ROOT/assets/bg.png" \
+            "/boot/grub/bg.png" \
+            "$grub_state"
+        printf 'wallpapers\t%s@%s:%s\t%s\t%s files\n' \
+            "$WALLPAPER_REPO_URL" \
+            "$WALLPAPER_REF" \
+            "$WALLPAPER_REPO_PATH" \
+            "$WALLPAPER_DEST" \
+            "$wallpaper_count"
+        printf 'wallpaper-service\tgenerated\t%s\t%s\n' \
+            "$HOME/.config/systemd/user/rice-wallpaper-rotator.service" \
+            "$service_state"
+        printf 'gdm-branding\tintentionally absent\tGDM\tabsent\n'
+    } >"$report_file"
+
+    log "Assets and wallpaper verification report: $report_file"
+}
+
 install_account_picture
 install_grub_artwork
 fetch_wallpapers
 write_wallpaper_rotator
 apply_first_wallpaper
+write_asset_report
 
 log "Account picture, GRUB artwork, and wallpapers are configured."
-

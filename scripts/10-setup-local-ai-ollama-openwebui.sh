@@ -258,4 +258,3 @@ log "Local AI setup is complete."
 log "Models: $OLLAMA_MODEL_1, $OLLAMA_MODEL_2"
 log "Open WebUI: http://127.0.0.1:$OPENWEBUI_PORT"
 log "Docker group membership becomes available after your next login."
-

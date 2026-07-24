@@ -1,68 +1,136 @@
-# UbuntuRicePack refactor
+# Restored UbuntuRicePack installer files
 
-Copy each supplied file to the matching path in the repository, then remove the
-superseded files:
+These are individual replacement files for the layout at commit `3640def`.
+They retain the new Ubuntu numbering and restore the detailed behavior that was
+lost in the compact rewrite.
+
+## What is restored
+
+- Explicit Ubuntu packages for ImageMagick, UnRAR, GNOME browser integration,
+  GNOME Screenshot, sxhkd, and the practical Ubuntu VLC plugin set.
+- Verified upstream Nerd Font downloads for JetBrains Mono, Noto, and Nerd
+  Fonts Symbols Only.
+- Full extension acquisition checks, metadata validation, safe extraction,
+  enabled/disabled state handling, and extension inventory reports.
+- GTK/Shell theme, icon theme, Ubuntu Dock, extension, wallpaper, VS Code,
+  package, terminal, and final desktop reports.
+- Google Chrome and VS Code signed vendor repositories.
+- Runtime sparse-fetching of wallpapers from
+  `ib-hussain/archRicePack/assets/wallpapers`.
+- A no-Snap/no-Firefox policy and a separate optional local-AI installer.
+
+## Intentional exclusions
+
+- No GDM logo or GDM background customization. The finalizer removes only
+  GDM override files managed by older UbuntuRicePack versions.
+- No partitioning, `arch-chroot`, chroot-preinstall, or first-login chroot
+  workflow.
+- No separate `wsl-install.sh`; `install-rice.sh --mode wsl` is the WSL entry.
+- Ollama/Open WebUI is never invoked by the main installer. Run stage 10 only
+  when wanted.
+- `scripts/12-install-power-profiles.sh` is not replaced by this set.
+
+## Copy the files
+
+From the directory containing this downloaded folder:
 
 ```bash
-git rm -f \
-  wsl-install.sh \
-  installation/basic-install.sh \
-  scripts/06-wsl.sh \
-  scripts/07-setup-assets-grub-gdm-wallpaper.sh \
-  scripts/08-finalize-and-verify.sh \
-  scripts/11-apply-custom-icon.sh \
-  scripts/12-chroot-preinstall.sh \
-  scripts/13-user-session-apply.sh \
-  scripts/15-install-power-profiles.sh
-```
+cd /mnt/d/Downloads/Repositories/ubuntuRicePack
 
-If any listed path was already removed, omit it from the command. The new
-replacement names are:
+cp -v /path/to/ubuntuRicePack-restored/install-rice.sh .
+cp -v /path/to/ubuntuRicePack-restored/packages/*.txt packages/
+cp -v /path/to/ubuntuRicePack-restored/configs/extensions/extension-list.txt \
+  configs/extensions/
+cp -v /path/to/ubuntuRicePack-restored/scripts/*.sh scripts/
 
-- `scripts/07-setup-assets-grub-wallpapers.sh`
-- `scripts/11-finalize-desktop.sh`
-
-Make the entry point and scripts executable:
-
-```bash
 chmod +x install-rice.sh scripts/*.sh
 ```
 
-Validate all shell files:
+Do not remove your custom extension:
+
+```text
+configs/extensions/arch-dock-icon@ib-hussain/
+```
+
+It is the only extension source that remains repository-owned. All other
+extension code is obtained from Ubuntu packages or GNOME Extensions.
+
+## Validate before installation
 
 ```bash
-for file in install-rice.sh scripts/*.sh; do
-    bash -n "$file" || exit 1
+bash -n install-rice.sh
+for script in scripts/*.sh; do
+  bash -n "$script"
 done
+
+bash scripts/04-setup-extensions.sh --help
+bash scripts/apply-ubuntu-gnome-best-settings.sh --help
 ```
 
-Run the complete Ubuntu GNOME or dual-boot configuration from a logged-in GNOME
-terminal:
+The GNOME settings dry run needs to be run in the Ubuntu GNOME VM after the
+package and extension stages have installed their schemas:
 
 ```bash
-./install-rice.sh
+bash scripts/05-apply-gnome-settings.sh --dry-run
 ```
 
-On Ubuntu WSL, the same entry point detects WSL:
+## Run
+
+Run as the normal desktop user from a terminal inside the logged-in GNOME
+session:
 
 ```bash
-./install-rice.sh
+./install-rice.sh --mode desktop
 ```
 
-If `/etc/wsl.conf` changed, run `wsl --shutdown` from PowerShell before using
-system services.
+For WSL:
 
-Local AI is intentionally excluded from the main installation. Install it only
-when wanted:
+```bash
+./install-rice.sh --mode wsl
+```
+
+Useful options:
+
+```text
+--strict
+--skip-nerd-fonts
+--skip-ventoy
+--skip-vscode
+--skip-python
+--skip-packages
+--keep-hostname
+--keep-sudo-password
+```
+
+The normal run records warnings and continues where a noncritical upstream
+download or post-login GNOME state can be retried. `--strict` converts package,
+external-installer, Nerd Font, GNOME, and final-audit mismatches into failures.
+
+## Reports and backups
+
+Detailed TSV/text reports are written to:
+
+```text
+~/.local/state/ubuntuRicePack/reports/
+```
+
+Logs and pre-change backups are written beneath:
+
+```text
+~/.local/state/ubuntuRicePack/logs/
+~/.local/state/ubuntuRicePack/backups/
+```
+
+After desktop installation, log out and back in once so newly copied GNOME
+Shell extensions enter the running Shell process.
+
+## Optional local AI
+
+This remains entirely independent:
 
 ```bash
 bash scripts/10-setup-local-ai-ollama-openwebui.sh
 ```
 
-That optional script installs only `gemma3:1b` and `deepseek-r1`, configures
-Ollama and Open WebUI, preserves Open WebUI data across container recreation,
-and creates the Open WebUI launcher.
-
-The new asset script contains no GDM logo or GDM background configuration.
-Finalization also removes the exact GDM dconf files created by earlier
-UbuntuRicePack revisions.
+It configures Ollama, pulls only its two configured models, installs Open WebUI,
+and creates its desktop launcher.

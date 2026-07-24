@@ -1,203 +1,751 @@
 #!/usr/bin/env bash
-# Install the custom extension locally, obtain supported third-party extensions
-# from extensions.gnome.org, and use Ubuntu packages for official extensions.
+# Install and configure Ibrahim's GNOME 50 extension inventory on Ubuntu.
+#
+# Repository policy:
+#   - Keep only arch-dock-icon@ib-hussain in configs/extensions.
+#   - Install official GNOME extensions from Ubuntu packages.
+#   - Download the two unmodified third-party extensions from the reviewed
+#     GNOME Extensions service.
+#   - Use Ubuntu Dock instead of installing upstream Dash-to-Dock.
 
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=00-common.sh
 source "$SCRIPT_DIR/00-common.sh"
 
-require_gnome_session
+readonly EXPECTED_GNOME_MAJOR="${RICE_GNOME_MAJOR:-50}"
+readonly EXTENSION_SOURCE="$REPO_ROOT/configs/extensions"
+readonly EXTENSION_LIST="$EXTENSION_SOURCE/extension-list.txt"
+readonly EXTENSION_DEST="$TARGET_HOME/.local/share/gnome-shell/extensions"
+readonly CUSTOM_UUID="arch-dock-icon@ib-hussain"
+readonly DASH_TO_DOCK_UUID="dash-to-dock@micxgx.gmail.com"
+readonly UBUNTU_DOCK_UUID="ubuntu-dock@ubuntu.com"
 
-ENABLE_ONLY=0
-if [[ "${1:-}" == "--enable-only" ]]; then
-    ENABLE_ONLY=1
-    shift
-fi
-[[ $# -eq 0 ]] || fail "Unknown extension setup argument: $1"
-
-EXTENSION_SOURCE="$REPO_ROOT/configs/extensions"
-EXTENSION_LIST="$EXTENSION_SOURCE/extension-list.txt"
-EXTENSION_DEST="$HOME/.local/share/gnome-shell/extensions"
-CUSTOM_UUID="arch-dock-icon@ib-hussain"
-
-[[ -f "$EXTENSION_LIST" ]] ||
-    fail "Missing extension manifest: $EXTENSION_LIST"
-
-mkdir -p "$EXTENSION_DEST"
-
-extension_is_installed() {
-    gnome-extensions list 2>/dev/null | grep -Fqx "$1"
-}
-
-normalize_uuid() {
-    case "$1" in
-        dash-to-dock@micxgx.gmail.com)
-            printf '%s\n' "ubuntu-dock@ubuntu.com"
-            ;;
-        *)
-            printf '%s\n' "$1"
-            ;;
-    esac
-}
-
-install_custom_extension() {
-    local source_dir="$EXTENSION_SOURCE/$CUSTOM_UUID"
-    local destination_dir="$EXTENSION_DEST/$CUSTOM_UUID"
-
-    [[ -d "$source_dir" ]] ||
-        fail "The custom extension source is missing: $source_dir"
-    [[ -f "$source_dir/metadata.json" ]] ||
-        fail "The custom extension metadata is missing."
-
-    mkdir -p "$destination_dir"
-    rsync -a --delete "$source_dir/" "$destination_dir/"
-
-    if [[ -d "$destination_dir/schemas" ]]; then
-        glib-compile-schemas "$destination_dir/schemas"
-    fi
-
-    log "Installed the repository's custom extension: $CUSTOM_UUID"
-}
-
-install_extension_from_ego() {
-    local uuid="$1"
-    local shell_major=""
-    local encoded_uuid=""
-    local metadata_url=""
-    local download_path=""
-    local extension_url=""
-    local archive=""
-
-    extension_is_installed "$uuid" && return 0
-
-    shell_major="$(
-        gnome-shell --version |
-            awk '{print $NF}' |
-            cut -d. -f1
-    )"
-    encoded_uuid="$(
-        python3 -c \
-            'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' \
-            "$uuid"
-    )"
-    metadata_url="https://extensions.gnome.org/extension-info/?uuid=${encoded_uuid}&shell_version=${shell_major}"
-
-    log "Resolving the GNOME $shell_major build for: $uuid"
-    download_path="$(
-        curl -fsSL "$metadata_url" |
-            python3 -c \
-                'import json,sys; print(json.load(sys.stdin).get("download_url", ""))'
-    )"
-
-    [[ -n "$download_path" ]] ||
-        fail "extensions.gnome.org has no compatible GNOME $shell_major build for $uuid"
-
-    if [[ "$download_path" == http://* || "$download_path" == https://* ]]; then
-        extension_url="$download_path"
-    else
-        extension_url="https://extensions.gnome.org$download_path"
-    fi
-
-    archive="$(mktemp "${TMPDIR:-/tmp}/gnome-extension.XXXXXX.zip")"
-    curl -fL "$extension_url" -o "$archive"
-    gnome-extensions install --force "$archive"
-    rm -f -- "$archive"
-
-    extension_is_installed "$uuid" ||
-        fail "GNOME did not index the installed extension: $uuid"
-    log "Installed from extensions.gnome.org: $uuid"
-}
-
-declare -A EGO_EXTENSIONS=(
-    ["hidetopbar@mathieu.bidon.ca"]=1
-    ["start-overlay-in-application-view@Hex_cz"]=1
+declare -A EGO_URLS=(
+    ["hidetopbar@mathieu.bidon.ca"]="https://extensions.gnome.org/download-extension/hidetopbar@mathieu.bidon.ca.shell-extension.zip"
+    ["start-overlay-in-application-view@Hex_cz"]="https://extensions.gnome.org/download-extension/start-overlay-in-application-view@Hex_cz.shell-extension.zip"
 )
 
-declare -a ENABLED_EXTENSIONS=(
-    "arch-dock-icon@ib-hussain"
+readonly -a OFFICIAL_GNOME_UUIDS=(
+    "apps-menu@gnome-shell-extensions.gcampax.github.com"
+    "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
+    "drive-menu@gnome-shell-extensions.gcampax.github.com"
+    "launch-new-instance@gnome-shell-extensions.gcampax.github.com"
+    "light-style@gnome-shell-extensions.gcampax.github.com"
+    "native-window-placement@gnome-shell-extensions.gcampax.github.com"
+    "places-menu@gnome-shell-extensions.gcampax.github.com"
+    "screenshot-window-sizer@gnome-shell-extensions.gcampax.github.com"
+    "status-icons@gnome-shell-extensions.gcampax.github.com"
+    "system-monitor@gnome-shell-extensions.gcampax.github.com"
+    "user-theme@gnome-shell-extensions.gcampax.github.com"
+    "window-list@gnome-shell-extensions.gcampax.github.com"
+    "windowsNavigator@gnome-shell-extensions.gcampax.github.com"
+    "workspace-indicator@gnome-shell-extensions.gcampax.github.com"
+)
+
+# These seven UUIDs were enabled in the exported Arch setup.
+readonly -a ACTIVE_SNAPSHOT_UUIDS=(
+    "$CUSTOM_UUID"
     "hidetopbar@mathieu.bidon.ca"
     "start-overlay-in-application-view@Hex_cz"
     "launch-new-instance@gnome-shell-extensions.gcampax.github.com"
     "places-menu@gnome-shell-extensions.gcampax.github.com"
     "system-monitor@gnome-shell-extensions.gcampax.github.com"
-    "ubuntu-dock@ubuntu.com"
     "user-theme@gnome-shell-extensions.gcampax.github.com"
-    "ding@rastersoft.com"
-    "tiling-assistant@ubuntu.com"
-    "ubuntu-appindicators@ubuntu.com"
 )
 
-declare -A should_enable=()
-for uuid in "${ENABLED_EXTENSIONS[@]}"; do
-    should_enable["$uuid"]=1
+# They remain installed because they were in the export, but the configured
+# Arch desktop had them disabled.
+readonly -a DISABLED_SNAPSHOT_UUIDS=(
+    "apps-menu@gnome-shell-extensions.gcampax.github.com"
+    "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
+    "drive-menu@gnome-shell-extensions.gcampax.github.com"
+    "light-style@gnome-shell-extensions.gcampax.github.com"
+    "native-window-placement@gnome-shell-extensions.gcampax.github.com"
+    "screenshot-window-sizer@gnome-shell-extensions.gcampax.github.com"
+    "status-icons@gnome-shell-extensions.gcampax.github.com"
+    "window-list@gnome-shell-extensions.gcampax.github.com"
+    "windowsNavigator@gnome-shell-extensions.gcampax.github.com"
+    "workspace-indicator@gnome-shell-extensions.gcampax.github.com"
+)
+
+readonly -a ACTIVE_UBUNTU_UUIDS=(
+    "$UBUNTU_DOCK_UUID"
+    "ding@rastersoft.com"
+    "ubuntu-appindicators@ubuntu.com"
+    "web-search-provider@ubuntu.com"
+)
+
+readonly -a DISABLED_UBUNTU_UUIDS=(
+    "$DASH_TO_DOCK_UUID"
+    "tiling-assistant@ubuntu.com"
+    "snapd-prompting@canonical.com"
+    "snapd-search-provider@canonical.com"
+)
+
+declare -a MANIFEST_UUIDS=()
+declare -a INSTALL_FAILURES=()
+STATE_ONLY=0
+
+usage() {
+    cat <<'USAGE'
+Usage: 04-setup-extensions.sh [--state-only]
+
+Options:
+  --state-only   Do not download or replace extension code. Reapply the
+                 curated enabled/disabled state and regenerate reports.
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --state-only | --enable-only)
+            STATE_ONLY=1
+            shift
+            ;;
+        --help | -h)
+            usage
+            exit 0
+            ;;
+        *)
+            fail "Unknown argument: $1"
+            ;;
+    esac
 done
 
-declare -a manifest_extensions=()
-while IFS= read -r raw_uuid || [[ -n "$raw_uuid" ]]; do
-    raw_uuid="${raw_uuid//$'\r'/}"
-    [[ -n "$raw_uuid" && "$raw_uuid" != \#* ]] || continue
-    manifest_extensions+=("$(normalize_uuid "$raw_uuid")")
-done < "$EXTENSION_LIST"
+trim() {
+    local value="$1"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s\n' "$value"
+}
 
-if [[ "$ENABLE_ONLY" -eq 0 ]]; then
-    install_custom_extension
+array_contains() {
+    local needle="$1"
+    shift
+    local candidate=""
 
-    for uuid in "${manifest_extensions[@]}"; do
-        [[ "$uuid" == "$CUSTOM_UUID" ]] && continue
-        extension_is_installed "$uuid" && continue
+    for candidate in "$@"; do
+        [[ "$candidate" == "$needle" ]] && return 0
+    done
+    return 1
+}
 
-        if [[ -n "${EGO_EXTENSIONS[$uuid]:-}" ]]; then
-            install_extension_from_ego "$uuid"
-        else
-            warn "Expected Ubuntu GNOME extension is not installed: $uuid"
+detect_gnome_major() {
+    local version_output=""
+
+    require_command gnome-shell
+    version_output="$(gnome-shell --version 2>/dev/null)" ||
+        fail "Could not read the GNOME Shell version."
+
+    if [[ "$version_output" =~ ([0-9]+)(\.[0-9]+)+ ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+    else
+        fail "Could not parse GNOME Shell version: $version_output"
+    fi
+}
+
+extension_present() {
+    local uuid="$1"
+
+    [[ -f "$EXTENSION_DEST/$uuid/metadata.json" ]] ||
+        [[ -f "/usr/share/gnome-shell/extensions/$uuid/metadata.json" ]] ||
+        gnome-extensions list 2>/dev/null | grep -Fxq "$uuid"
+}
+
+extension_enabled() {
+    local uuid="$1"
+
+    gnome-extensions list --enabled 2>/dev/null | grep -Fxq "$uuid" ||
+        gsettings get org.gnome.shell enabled-extensions 2>/dev/null |
+            grep -Fq "'$uuid'"
+}
+
+install_required_packages() {
+    local package_name=""
+    local -a required_packages=(
+        gnome-shell-extensions
+        gnome-shell-ubuntu-extensions
+        libglib2.0-bin
+        python3
+        rsync
+        unzip
+    )
+    local -a missing_packages=()
+
+    for package_name in "${required_packages[@]}"; do
+        if ! apt_package_installed "$package_name"; then
+            missing_packages+=("$package_name")
         fi
     done
-fi
 
-# Ubuntu Dock replaces upstream Dash-to-Dock and must never run beside it.
-if extension_is_installed "dash-to-dock@micxgx.gmail.com"; then
-    gnome-extensions disable "dash-to-dock@micxgx.gmail.com" || true
-fi
-
-# The rice is Snap-free; these providers are not part of the desired session.
-for uuid in \
-    "snapd-prompting@canonical.com" \
-    "snapd-search-provider@canonical.com"
-do
-    if extension_is_installed "$uuid"; then
-        gnome-extensions disable "$uuid" || true
-    fi
-done
-
-# Reproduce the actual enabled/disabled state from the Arch export. Extensions
-# that were merely installed on Arch remain installed but disabled here.
-for uuid in "${manifest_extensions[@]}"; do
-    if ! extension_is_installed "$uuid"; then
-        continue
+    if [[ "${#missing_packages[@]}" -eq 0 ]]; then
+        log "All Ubuntu GNOME extension packages are already installed."
+        return 0
     fi
 
-    if [[ -n "${should_enable[$uuid]:-}" ]]; then
-        gnome-extensions enable "$uuid" ||
-            warn "Could not enable extension immediately: $uuid"
+    log "Installing required Ubuntu GNOME extension packages."
+    sudo_validate
+    apt_update
+    apt_install "${missing_packages[@]}"
+}
+
+load_and_validate_manifest() {
+    local raw_line=""
+    local uuid=""
+    local official_uuid=""
+    local -A known=()
+    local -A seen=()
+
+    [[ -f "$EXTENSION_LIST" ]] ||
+        fail "Missing extension inventory: $EXTENSION_LIST"
+
+    known["$CUSTOM_UUID"]=1
+    known["$DASH_TO_DOCK_UUID"]=1
+    for uuid in "${!EGO_URLS[@]}"; do
+        known["$uuid"]=1
+    done
+    for official_uuid in "${OFFICIAL_GNOME_UUIDS[@]}"; do
+        known["$official_uuid"]=1
+    done
+
+    while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
+        raw_line="${raw_line%%#*}"
+        uuid="$(trim "$raw_line")"
+        [[ -n "$uuid" ]] || continue
+
+        [[ "$uuid" != *[[:space:]]* ]] ||
+            fail "Invalid manifest entry containing whitespace: $uuid"
+        [[ -n "${known[$uuid]:-}" ]] ||
+            fail "Unknown extension in manifest: $uuid"
+        [[ -z "${seen[$uuid]:-}" ]] ||
+            fail "Duplicate extension in manifest: $uuid"
+
+        seen["$uuid"]=1
+        MANIFEST_UUIDS+=("$uuid")
+    done <"$EXTENSION_LIST"
+
+    [[ "${#MANIFEST_UUIDS[@]}" -eq 18 ]] ||
+        fail "Expected 18 exported extension UUIDs; found ${#MANIFEST_UUIDS[@]}."
+
+    for uuid in "${!known[@]}"; do
+        [[ -n "${seen[$uuid]:-}" ]] ||
+            fail "The exported extension inventory is missing: $uuid"
+    done
+
+    log "Validated the complete 18-entry extension inventory."
+}
+
+validate_extension_metadata() {
+    local metadata_file="$1"
+    local expected_uuid="$2"
+    local shell_major="$3"
+
+    python3 - "$metadata_file" "$expected_uuid" "$shell_major" <<'PY_METADATA'
+import json
+import pathlib
+import sys
+
+metadata_path = pathlib.Path(sys.argv[1])
+expected_uuid = sys.argv[2]
+shell_major = sys.argv[3]
+
+try:
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError) as error:
+    raise SystemExit(f"invalid metadata.json: {error}")
+
+if metadata.get("uuid") != expected_uuid:
+    raise SystemExit(
+        f"metadata UUID is {metadata.get('uuid')!r}, expected {expected_uuid!r}"
+    )
+
+supported = {str(value) for value in metadata.get("shell-version", [])}
+if shell_major not in supported:
+    raise SystemExit(
+        f"{expected_uuid} does not declare GNOME Shell {shell_major} support"
+    )
+
+print(metadata.get("version-name", metadata.get("version", "unknown")))
+PY_METADATA
+}
+
+install_extension_tree() {
+    local source_dir="$1"
+    local uuid="$2"
+    local source_label="$3"
+    local shell_major="$4"
+    local destination="$EXTENSION_DEST/$uuid"
+    local version=""
+
+    [[ -f "$source_dir/metadata.json" ]] ||
+        fail "Extension metadata is missing for $uuid in $source_dir"
+
+    if ! version="$(
+        validate_extension_metadata \
+            "$source_dir/metadata.json" \
+            "$uuid" \
+            "$shell_major"
+    )"; then
+        fail "Rejected extension metadata for $uuid."
+    fi
+
+    if [[ -e "$destination" || -L "$destination" ]]; then
+        backup_path "$destination"
+    fi
+
+    mkdir -p -- "$destination"
+    rsync -a --delete -- "$source_dir/" "$destination/"
+
+    if [[ -d "$destination/schemas" ]]; then
+        rm -f -- "$destination/schemas/gschemas.compiled"
+        glib-compile-schemas "$destination/schemas" ||
+            fail "Could not compile extension schemas for $uuid."
+    fi
+
+    printf '%s\n' "$source_label" >"$destination/.ubuntuRicePack-source"
+    log "Installed $uuid version $version from $source_label."
+}
+
+archive_is_safe() {
+    local archive="$1"
+
+    python3 - "$archive" <<'PY_ARCHIVE'
+import pathlib
+import stat
+import sys
+import zipfile
+
+archive = pathlib.Path(sys.argv[1])
+
+try:
+    with zipfile.ZipFile(archive) as bundle:
+        if bundle.testzip() is not None:
+            raise ValueError("CRC validation failed")
+
+        for item in bundle.infolist():
+            name = item.filename
+            path = pathlib.PurePosixPath(name)
+            mode = (item.external_attr >> 16) & 0xFFFF
+
+            if (
+                path.is_absolute()
+                or ".." in path.parts
+                or "\\" in name
+                or stat.S_ISLNK(mode)
+            ):
+                raise ValueError(f"unsafe archive entry: {name}")
+except (OSError, ValueError, zipfile.BadZipFile) as error:
+    print(error, file=sys.stderr)
+    raise SystemExit(1)
+PY_ARCHIVE
+}
+
+download_ego_archive() {
+    local url="$1"
+    local destination="$2"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl \
+            --fail \
+            --location \
+            --show-error \
+            --silent \
+            --retry 3 \
+            --retry-all-errors \
+            --connect-timeout 20 \
+            --output "$destination" \
+            "$url"
+    elif command -v wget >/dev/null 2>&1; then
+        wget \
+            --tries=3 \
+            --timeout=20 \
+            --output-document="$destination" \
+            "$url"
     else
-        gnome-extensions disable "$uuid" || true
+        return 1
     fi
-done
 
-for uuid in \
-    "ding@rastersoft.com" \
-    "tiling-assistant@ubuntu.com" \
-    "ubuntu-appindicators@ubuntu.com"
-do
-    if extension_is_installed "$uuid"; then
-        gnome-extensions enable "$uuid" ||
-            warn "Could not enable Ubuntu system extension: $uuid"
+    [[ -s "$destination" ]]
+}
+
+install_ego_extension() {
+    local uuid="$1"
+    local shell_major="$2"
+    local base_url="${EGO_URLS[$uuid]}"
+    local url="${base_url}?shell_version=${shell_major}"
+    local work_dir=""
+    local archive=""
+    local extracted=""
+
+    work_dir="$(make_temp_dir)"
+    register_temp_path "$work_dir"
+    archive="$work_dir/$uuid.zip"
+    extracted="$work_dir/extracted"
+    mkdir -p -- "$extracted"
+
+    log "Downloading the reviewed GNOME Shell $shell_major build of $uuid."
+    if ! download_ego_archive "$url" "$archive"; then
+        if extension_present "$uuid"; then
+            warn "Download failed; keeping the already-installed copy of $uuid."
+            return 0
+        fi
+        INSTALL_FAILURES+=("$uuid: download failed")
+        return 0
     fi
-done
 
-log "GNOME extension setup is complete."
-log "A logout/login is required for newly installed Shell code to become active."
+    if ! archive_is_safe "$archive"; then
+        INSTALL_FAILURES+=("$uuid: downloaded archive failed validation")
+        return 0
+    fi
 
+    unzip -q "$archive" -d "$extracted"
+    if ! install_extension_tree \
+        "$extracted" \
+        "$uuid" \
+        "extensions.gnome.org" \
+        "$shell_major"
+    then
+        INSTALL_FAILURES+=("$uuid: installation failed")
+    fi
+}
+
+install_custom_extension() {
+    local shell_major="$1"
+    local source_dir="$EXTENSION_SOURCE/$CUSTOM_UUID"
+
+    [[ -d "$source_dir" ]] ||
+        fail "The custom extension must remain in the repository: $source_dir"
+
+    install_extension_tree \
+        "$source_dir" \
+        "$CUSTOM_UUID" \
+        "ubuntuRicePack repository" \
+        "$shell_major"
+}
+
+set_extension_state_fallback() {
+    local uuid="$1"
+    local desired="$2"
+
+    python3 - "$uuid" "$desired" <<'PY_STATE'
+import ast
+import subprocess
+import sys
+
+uuid, desired = sys.argv[1:3]
+schema = "org.gnome.shell"
+
+
+def get_array(key):
+    result = subprocess.run(
+        ["gsettings", "get", schema, key],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    ).stdout.strip()
+    if result.startswith("@as "):
+        result = result[4:]
+    value = ast.literal_eval(result)
+    return list(value) if isinstance(value, list) else []
+
+
+def set_array(key, values):
+    rendered = "[" + ", ".join(repr(value) for value in values) + "]"
+    subprocess.run(
+        ["gsettings", "set", schema, key, rendered],
+        check=True,
+    )
+
+
+enabled = get_array("enabled-extensions")
+disabled = get_array("disabled-extensions")
+
+if desired == "enable":
+    if uuid not in enabled:
+        enabled.append(uuid)
+    disabled = [value for value in disabled if value != uuid]
+else:
+    enabled = [value for value in enabled if value != uuid]
+    if uuid not in disabled:
+        disabled.append(uuid)
+
+set_array("enabled-extensions", enabled)
+set_array("disabled-extensions", disabled)
+PY_STATE
+}
+
+set_extension_state() {
+    local uuid="$1"
+    local desired="$2"
+
+    if ! extension_present "$uuid"; then
+        if [[ "$desired" == "enable" ]]; then
+            INSTALL_FAILURES+=("$uuid: required extension is not installed")
+        else
+            log "Optional disabled extension is not installed: $uuid"
+        fi
+        return 0
+    fi
+
+    if gnome-extensions "$desired" "$uuid" >/dev/null 2>&1; then
+        log "Configured extension state: $desired $uuid"
+        return 0
+    fi
+
+    # A freshly copied extension may not enter the current Shell process until
+    # the next login. Persist the state directly so it starts then.
+    if set_extension_state_fallback "$uuid" "$desired"; then
+        log "Persisted extension state for next login: $desired $uuid"
+    else
+        INSTALL_FAILURES+=("$uuid: could not persist '$desired' state")
+    fi
+}
+
+verify_official_extensions() {
+    local uuid=""
+
+    for uuid in "${OFFICIAL_GNOME_UUIDS[@]}"; do
+        if extension_present "$uuid"; then
+            log "Ubuntu GNOME extension available: $uuid"
+        else
+            INSTALL_FAILURES+=("$uuid: missing from gnome-shell-extensions")
+        fi
+    done
+
+    if extension_present "$UBUNTU_DOCK_UUID"; then
+        log "Ubuntu Dock is available and will replace upstream Dash-to-Dock."
+    else
+        INSTALL_FAILURES+=("$UBUNTU_DOCK_UUID: missing from Ubuntu's extension package")
+    fi
+}
+
+apply_extension_states() {
+    local uuid=""
+
+    gs_set org.gnome.shell disable-user-extensions false
+
+    for uuid in "${ACTIVE_SNAPSHOT_UUIDS[@]}"; do
+        set_extension_state "$uuid" enable
+    done
+    for uuid in "${DISABLED_SNAPSHOT_UUIDS[@]}"; do
+        set_extension_state "$uuid" disable
+    done
+    for uuid in "${ACTIVE_UBUNTU_UUIDS[@]}"; do
+        set_extension_state "$uuid" enable
+    done
+    for uuid in "${DISABLED_UBUNTU_UUIDS[@]}"; do
+        set_extension_state "$uuid" disable
+    done
+}
+
+write_extension_report() {
+    local report_dir="$STATE_DIR/reports"
+    local report_file="$report_dir/extensions-$RUN_ID.tsv"
+    local all_file="$report_dir/extensions-$RUN_ID-all.txt"
+    local enabled_file="$report_dir/extensions-$RUN_ID-enabled.txt"
+    local shell_state_file="$report_dir/extensions-$RUN_ID-shell-state.txt"
+    local uuid=""
+    local effective_uuid=""
+    local installed="no"
+    local enabled="no"
+    local desired="disabled"
+    local source="Ubuntu package"
+    local metadata=""
+    local version="unavailable"
+    local location="not installed"
+
+    mkdir -p -- "$report_dir"
+    printf 'inventory_uuid\teffective_uuid\tsource\tlocation\tversion\tinstalled\tdesired\tenabled\n' \
+        >"$report_file"
+
+    for uuid in "${MANIFEST_UUIDS[@]}"; do
+        effective_uuid="$uuid"
+        source="Ubuntu package"
+        desired="disabled"
+
+        if [[ "$uuid" == "$CUSTOM_UUID" ]]; then
+            source="repository"
+        elif [[ -n "${EGO_URLS[$uuid]:-}" ]]; then
+            source="extensions.gnome.org"
+        elif [[ "$uuid" == "$DASH_TO_DOCK_UUID" ]]; then
+            effective_uuid="$UBUNTU_DOCK_UUID"
+            source="Ubuntu Dock substitution"
+        fi
+
+        if array_contains "$uuid" "${ACTIVE_SNAPSHOT_UUIDS[@]}" ||
+            [[ "$uuid" == "$DASH_TO_DOCK_UUID" ]]
+        then
+            desired="enabled"
+        fi
+
+        installed="no"
+        enabled="no"
+        metadata=""
+        version="unavailable"
+        location="not installed"
+        extension_present "$effective_uuid" && installed="yes"
+        extension_enabled "$effective_uuid" && enabled="yes"
+
+        if [[ -f "$EXTENSION_DEST/$effective_uuid/metadata.json" ]]; then
+            metadata="$EXTENSION_DEST/$effective_uuid/metadata.json"
+            location="$EXTENSION_DEST/$effective_uuid"
+        elif [[ -f "/usr/share/gnome-shell/extensions/$effective_uuid/metadata.json" ]]; then
+            metadata="/usr/share/gnome-shell/extensions/$effective_uuid/metadata.json"
+            location="/usr/share/gnome-shell/extensions/$effective_uuid"
+        fi
+
+        if [[ -n "$metadata" ]]; then
+            version="$(
+                python3 - "$metadata" <<'PY_REPORT_VERSION'
+import json
+import pathlib
+import sys
+
+try:
+    value = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    print("unreadable")
+else:
+    print(value.get("version-name", value.get("version", "unknown")))
+PY_REPORT_VERSION
+            )"
+        fi
+
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "$uuid" \
+            "$effective_uuid" \
+            "$source" \
+            "$location" \
+            "$version" \
+            "$installed" \
+            "$desired" \
+            "$enabled" >>"$report_file"
+    done
+
+    # Ubuntu-specific extensions are not part of the 18-entry Arch export, but
+    # they still need an explicit state audit on an Ubuntu installation.
+    for uuid in \
+        "ding@rastersoft.com" \
+        "tiling-assistant@ubuntu.com" \
+        "ubuntu-appindicators@ubuntu.com" \
+        "web-search-provider@ubuntu.com" \
+        "snapd-prompting@canonical.com" \
+        "snapd-search-provider@canonical.com"
+    do
+        installed="no"
+        enabled="no"
+        desired="disabled"
+        metadata=""
+        version="unavailable"
+        location="not installed"
+
+        if array_contains "$uuid" "${ACTIVE_UBUNTU_UUIDS[@]}"; then
+            desired="enabled"
+        fi
+        extension_present "$uuid" && installed="yes"
+        extension_enabled "$uuid" && enabled="yes"
+
+        if [[ -f "$EXTENSION_DEST/$uuid/metadata.json" ]]; then
+            metadata="$EXTENSION_DEST/$uuid/metadata.json"
+            location="$EXTENSION_DEST/$uuid"
+        elif [[ -f "/usr/share/gnome-shell/extensions/$uuid/metadata.json" ]]; then
+            metadata="/usr/share/gnome-shell/extensions/$uuid/metadata.json"
+            location="/usr/share/gnome-shell/extensions/$uuid"
+        fi
+
+        if [[ -n "$metadata" ]]; then
+            version="$(
+                python3 - "$metadata" <<'PY_UBUNTU_VERSION'
+import json
+import pathlib
+import sys
+
+try:
+    value = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    print("unreadable")
+else:
+    print(value.get("version-name", value.get("version", "unknown")))
+PY_UBUNTU_VERSION
+            )"
+        fi
+
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "ubuntu-native:$uuid" \
+            "$uuid" \
+            "Ubuntu package" \
+            "$location" \
+            "$version" \
+            "$installed" \
+            "$desired" \
+            "$enabled" >>"$report_file"
+    done
+
+    gnome-extensions list 2>/dev/null | sort >"$all_file"
+    gnome-extensions list --enabled 2>/dev/null | sort >"$enabled_file"
+    {
+        printf 'GNOME Shell: '
+        gnome-shell --version 2>/dev/null || true
+        printf 'enabled-extensions='
+        gsettings get org.gnome.shell enabled-extensions 2>/dev/null || true
+        printf 'disabled-extensions='
+        gsettings get org.gnome.shell disabled-extensions 2>/dev/null || true
+    } >"$shell_state_file"
+
+    log "Extension verification report: $report_file"
+    log "Complete extension inventory: $all_file"
+    log "Enabled extension inventory: $enabled_file"
+    log "GNOME Shell extension state snapshot: $shell_state_file"
+}
+
+main() {
+    local shell_major=""
+
+    require_user_session
+    require_ubuntu
+    require_command gnome-extensions
+    require_command gsettings
+    assert_repo_path "configs/extensions/$CUSTOM_UUID"
+
+    shell_major="$(detect_gnome_major)"
+    if [[ "$shell_major" != "$EXPECTED_GNOME_MAJOR" &&
+        "${ALLOW_UNSUPPORTED_GNOME:-0}" != "1" ]]
+    then
+        fail "This configuration targets GNOME $EXPECTED_GNOME_MAJOR; detected GNOME $shell_major."
+    fi
+
+    log "Preparing the Ubuntu GNOME $shell_major extension set."
+    load_and_validate_manifest
+
+    if [[ "$STATE_ONLY" == "0" ]]; then
+        install_required_packages
+        mkdir -p -- "$EXTENSION_DEST"
+
+        install_custom_extension "$shell_major"
+        install_ego_extension "hidetopbar@mathieu.bidon.ca" "$shell_major"
+        install_ego_extension \
+            "start-overlay-in-application-view@Hex_cz" \
+            "$shell_major"
+    else
+        log "State-only mode: extension downloads and code replacement were skipped."
+    fi
+
+    verify_official_extensions
+    apply_extension_states
+    write_extension_report
+
+    if [[ "${#INSTALL_FAILURES[@]}" -gt 0 ]]; then
+        warn "Extension setup completed with ${#INSTALL_FAILURES[@]} problem(s):"
+        printf '  - %s\n' "${INSTALL_FAILURES[@]}" | tee -a "$LOG_FILE" >&2
+        fail "Resolve the extension errors above before applying GNOME settings."
+    fi
+
+    log "GNOME extension setup complete. Log out and back in after all stages finish."
+}
+
+if [[ "${RICE_SOURCE_ONLY:-0}" != "1" ]]; then
+    main "$@"
+fi
