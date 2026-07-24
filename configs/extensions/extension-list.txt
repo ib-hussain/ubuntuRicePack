@@ -1,8 +1,15 @@
-arch-dock-icon@ib-hussain
-dash-to-dock@micxgx.gmail.com
+# Local extensions bundled by UbuntuRicePack.
+#
+# Ubuntu's system extensions, including Ubuntu Dock and DING, are managed
+# separately by scripts/04-setup-extensions.sh.
+
 hidetopbar@mathieu.bidon.ca
 launch-new-instance@gnome-shell-extensions.gcampax.github.com
 places-menu@gnome-shell-extensions.gcampax.github.com
 start-overlay-in-application-view@Hex_cz
 system-monitor@gnome-shell-extensions.gcampax.github.com
 user-theme@gnome-shell-extensions.gcampax.github.com
+
+# Keep the corrected custom Show Applications extension in the repository, but
+# enable it only after adding icons/show-apps-logo.png or .svg for Ubuntu.
+# arch-dock-icon@ib-hussain
