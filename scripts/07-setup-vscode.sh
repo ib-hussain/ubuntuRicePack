@@ -1,62 +1,72 @@
 #!/usr/bin/env bash
+# Restore VS Code data and the Nautilus "Open with Code" integration.
+
 set -Eeuo pipefail
+IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=00-common.sh
 source "$SCRIPT_DIR/00-common.sh"
 
-require_user_session
+require_gnome_session
 
-log "Setting up Nautilus Open with Code."
+command -v code >/dev/null 2>&1 ||
+    fail "Visual Studio Code is not installed. Run scripts/01-install-packages.sh first."
 
-mkdir -p "$HOME/.local/share/nautilus-python/extensions"
-if [[ -d "$REPO_ROOT/configs/nautilus-python" ]]; then
-    copy_dir_contents "$REPO_ROOT/configs/nautilus-python" "$HOME/.local/share/nautilus-python/extensions"
-fi
-nautilus -q >/dev/null 2>&1 || true
-
-log "Setting up Visual Studio Code from archRicePack assets."
-
-install_aur_package visual-studio-code-bin
-
-VSCODE_ASSET_DIR="$REPO_ROOT/configs/vscode"
-VSCODE_USER_SRC="$VSCODE_ASSET_DIR/User"
-VSCODE_EXT_SRC="$VSCODE_ASSET_DIR/extensions"
-
+VSCODE_SOURCE="$REPO_ROOT/configs/vscode"
+VSCODE_USER_SOURCE="$VSCODE_SOURCE/User"
+VSCODE_EXTENSIONS_SOURCE="$VSCODE_SOURCE/extensions"
+VSCODE_EXTENSION_LIST="$VSCODE_SOURCE/extensions.txt"
 VSCODE_USER_DEST="$HOME/.config/Code/User"
-VSCODE_EXT_DEST="$HOME/.vscode/extensions"
+VSCODE_EXTENSIONS_DEST="$HOME/.vscode/extensions"
+NAUTILUS_DEST="$HOME/.local/share/nautilus-python/extensions"
 
-log "Replacing VS Code User config."
-if [[ -d "$VSCODE_USER_SRC" ]]; then
-    # backup_path "$VSCODE_USER_DEST"
+log "Restoring Visual Studio Code and Nautilus integration."
+
+if [[ -d "$REPO_ROOT/configs/nautilus-python" ]]; then
+    backup_path "$NAUTILUS_DEST"
+    mkdir -p "$NAUTILUS_DEST"
+    rsync -a --delete \
+        "$REPO_ROOT/configs/nautilus-python/" \
+        "$NAUTILUS_DEST/"
+fi
+
+if [[ -d "$VSCODE_USER_SOURCE" ]]; then
+    backup_path "$VSCODE_USER_DEST"
     mkdir -p "$VSCODE_USER_DEST"
-    cp -r "$VSCODE_USER_SRC"/. "$VSCODE_USER_DEST"/
+    rsync -a --delete "$VSCODE_USER_SOURCE/" "$VSCODE_USER_DEST/"
 else
-    warn "VS Code User config asset missing: $VSCODE_USER_SRC"
+    warn "VS Code User configuration is absent: $VSCODE_USER_SOURCE"
 fi
 
-log "Replacing VS Code extensions folder."
-if [[ -d "$VSCODE_EXT_SRC" ]]; then
-    # backup_path "$VSCODE_EXT_DEST"
-    mkdir -p "$VSCODE_EXT_DEST"
-    cp -r "$VSCODE_EXT_SRC"/. "$VSCODE_EXT_DEST"/
-else
-    warn "VS Code extensions asset missing: $VSCODE_EXT_SRC"
+# Preserve the complete extension data requested by the user. The preferred
+# long-term representation is extensions.txt, but existing extension folders
+# are restored too so no repository-captured data is lost.
+if [[ -d "$VSCODE_EXTENSIONS_SOURCE" ]]; then
+    backup_path "$VSCODE_EXTENSIONS_DEST"
+    mkdir -p "$VSCODE_EXTENSIONS_DEST"
+    rsync -a "$VSCODE_EXTENSIONS_SOURCE/" "$VSCODE_EXTENSIONS_DEST/"
 fi
 
-if command -v code >/dev/null 2>&1; then
-    code --version | head -n 1 | tee -a "$LOG_FILE" || true
-else
-    warn "code command not found after visual-studio-code-bin install."
+if [[ -f "$VSCODE_EXTENSION_LIST" ]]; then
+    while IFS= read -r extension_id || [[ -n "$extension_id" ]]; do
+        extension_id="${extension_id//$'\r'/}"
+        [[ -n "$extension_id" && "$extension_id" != \#* ]] || continue
+        code --install-extension "$extension_id" --force ||
+            warn "VS Code could not install extension: $extension_id"
+    done < "$VSCODE_EXTENSION_LIST"
 fi
-
-log "VS Code setup complete."
 
 git config --global user.name "Ibrahim Hussain"
 git config --global user.email "ibrahimbeaconarion@gmail.com"
 git config --global init.defaultBranch main
-git config core.editor "nano"
+git config --global core.editor nano
 git config --global merge.tool vscode
-git config --global mergetool.vscode.cmd "code --wait $MERGED"
+git config --global mergetool.vscode.cmd 'code --wait "$MERGED"'
 git config --global push.default simple
-# git config --global pull.rebase true
-# git config --global pull.merge true
+
+nautilus -q >/dev/null 2>&1 || true
+code --version | head -n 1 | tee -a "$LOG_FILE"
+
+log "Visual Studio Code setup is complete."
+

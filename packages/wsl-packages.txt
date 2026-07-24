@@ -1,88 +1,67 @@
-# ==========================================================
-# wsl-packages.txt (Ubuntu/apt version)
-# CLI-only subset, Ubuntu/apt equivalents of the Arch/pacman list.
-# Same category exclusions as the Arch version apply here —
-# no desktop shell, no GUI apps, no bare-metal/hardware
-# daemons, no host networking/audio stack inside WSL.
-#
-# Notes on packages that don't map 1:1:
-#   - `bat`      -> binary is `batcat` on Ubuntu.
-#                   ln -s /usr/bin/batcat ~/.local/bin/bat
-#   - `fd`       -> package is `fd-find`, binary is `fdfind`.
-#                   ln -s $(which fdfind) ~/.local/bin/fd
-#   - `eza`      -> not in default Ubuntu repos pre-24.04; add the eza
-#                   apt repo (see github.com/eza-community/eza).
-#   - `starship` -> not in apt; curl -sS https://starship.rs/install.sh | sh
-#   - `fastfetch`-> only in Ubuntu 23.10+ universe; else add its PPA.
-#   - `pyenv`    -> not in apt; curl https://pyenv.run | bash
-#   - `7zip`     -> `p7zip-full` covers this on older Ubuntu releases.
-#   - `tk`       -> `tk-dev` (dev headers, needed for pyenv Python builds).
-#   - `sqlite`   -> `libsqlite3-dev` (dev headers, for pyenv builds).
-#   - `openssl`/`zlib`/`xz`/`bzip2`/`libffi`/`readline`/`ncurses` are all
-#     needed as *-dev packages for building Python via pyenv, not the
-#     runtime libraries (which Ubuntu already ships).
-# ==========================================================
+# Ubuntu repository packages for WSL mode.
+# GNOME, themes, bare-metal hardware services, and Local AI are excluded.
+# External eza, Starship, and pyenv setup is performed by the scripts.
 
-# --- Base / build tools ---
+# Base and development
 build-essential
 git
 curl
 wget
+ca-certificates
+gpg
+rsync
 unzip
+zip
 python3
+python3-pip
+python3-venv
 less
-sudo
 nano
-tree
+sudo
+bash-completion
 
-# --- pyenv + Python build deps ---
-pyenv
+# Python-build dependencies for pyenv
 libssl-dev
 zlib1g-dev
-liblzma-dev
 libbz2-dev
-libffi-dev
 libreadline-dev
 libsqlite3-dev
-tk-dev
 libncurses-dev
+libffi-dev
+liblzma-dev
+libxml2-dev
+libxmlsec1-dev
+xz-utils
+tk-dev
 
-# --- Modern CLI replacements ---
+# Shell and CLI toolkit
+zsh
+fastfetch
 btop
 htop
-eza
 bat
 fd-find
 ripgrep
 fzf
 zoxide
 jq
+tree
 ncdu
 tldr
 chafa
-p7zip-full
 7zip
-unrar
+cmatrix
+sl
+bc
 
-# --- Shell / prompt ---
-zsh
-starship
-fastfetch
-
-# --- File transfer / remote ---
-rsync
+# Transfer, archives, and utilities
+openssh-client
 sshfs
 smbclient
 magic-wormhole
-
-# --- Containers / local AI (need systemd — see scripts/10) ---
-docker.io
-docker-compose-plugin
-ollama
-
-# --- Image handling (CLI) ---
 imagemagick
 
-# --- Misc ---
-sl
-cmatrix
+# Containers for general development
+docker.io
+docker-compose-v2
+

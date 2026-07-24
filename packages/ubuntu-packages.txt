@@ -1,50 +1,98 @@
-# Core packages required by the rice installer.
-# Ubuntu/Debian (apt) equivalents of the Arch/pacman list.
-#
-# Notes on packages that don't map 1:1:
-#   - `bat`      -> binary is `batcat` on Ubuntu (name collision with another package).
-#                   Symlink: mkdir -p ~/.local/bin && ln -s /usr/bin/batcat ~/.local/bin/bat
-#   - `fd`       -> package is `fd-find`, binary is `fdfind`.
-#                   Symlink: ln -s $(which fdfind) ~/.local/bin/fd
-#   - `eza`      -> not in default Ubuntu repos pre-24.04; add the eza PPA/repo:
-#                   https://github.com/eza-community/eza/blob/main/INSTALL.md#debian--ubuntu
-#   - `starship` -> not in apt; install via: curl -sS https://starship.rs/install.sh | sh
-#   - `fastfetch`-> only in Ubuntu 23.10+ universe; otherwise add the fastfetch PPA.
-#   - `pyenv`    -> not in apt; install via: curl https://pyenv.run | bash
-#   - `keyd`     -> not in apt; build from source or use a .deb from upstream releases.
-#   - `ventoy-bin` -> not in apt; download the official .tar.gz from ventoy.net.
-#   - `google-chrome` -> add Google's apt repo, not in default Ubuntu repos.
-#   - `visual-studio-code-bin` -> add Microsoft's apt repo.
-#   - `7zip`     -> `p7zip-full` covers most needs; the newer standalone `7zip`
-#                   package exists on Ubuntu 23.10+, else use p7zip-full.
-#   - `nerd-font` ttf packages -> Ubuntu doesn't package Nerd Fonts; download
-#                   manually from https://www.nerdfonts.com/font-downloads
+# Ubuntu repository packages for the full GNOME/dual-boot installation.
+# One apt package per line. External packages are handled by script 01:
+# Google Chrome, Visual Studio Code, eza, Starship, and pyenv.
+# Ollama/Open WebUI are intentionally absent; script 10 installs them optionally.
 
+# Base and development
 build-essential
 git
 curl
 wget
+ca-certificates
+gpg
+rsync
 unzip
+zip
 python3
+python3-pip
+python3-venv
 python3-gi
+python3-pil
+python3-png
 less
-libgtk-3-0
-libgtk-4-1
-libadwaita-1-0
-dconf-cli
-qbittorrent
+nano
+dialog
+
+# Python-build dependencies for pyenv
+libssl-dev
+zlib1g-dev
+libbz2-dev
+libreadline-dev
+libsqlite3-dev
+libncurses-dev
+libffi-dev
+liblzma-dev
+libxml2-dev
+libxmlsec1-dev
+xz-utils
+tk-dev
+
+# GNOME desktop
+gdm3
+gnome-session
 gnome-shell
 gnome-shell-extensions
+gnome-shell-extension-manager
 gnome-tweaks
-gnome-terminal
+gnome-control-center
+gnome-settings-daemon
 gnome-system-monitor
+gnome-terminal
+gnome-software
+gnome-keyring
+dconf-cli
+dconf-editor
 nautilus
 python3-nautilus
-fastfetch
-papirus-icon-theme
+nautilus-image-converter
+nautilus-share
+gnome-sushi
+gnome-disk-utility
+baobab
+file-roller
+loupe
+papers
+zenity
+xdg-user-dirs
+xdg-user-dirs-gtk
+xdg-utils
+xdg-desktop-portal
+xdg-desktop-portal-gnome
+gvfs
+gvfs-backends
 libgtk-3-bin
+libgtk-4-bin
+
+# Appearance and fonts
+papirus-icon-theme
+fonts-noto
+fonts-noto-core
+fonts-noto-cjk
+fonts-noto-color-emoji
+fonts-noto-mono
+fonts-noto-extra
+fonts-dejavu
+fonts-liberation
+fonts-ubuntu
+fonts-jetbrains-mono
+sassc
+
+# Shell and CLI toolkit
+bash-completion
+zsh
+fastfetch
 btop
-eza
+htop
 bat
 fd-find
 ripgrep
@@ -55,161 +103,67 @@ tree
 ncdu
 tldr
 chafa
-p7zip-full
 7zip
-docker.io
-linux-tools-generic
-zenity
-gnome-keyring
-docker-compose-plugin
-ollama
-imagemagick
-xdg-utils
-7zip
-acpi
-alsa-utils
-audacious
-build-essential
-bat
-bc
-blueman
-bluez
-bluez
-brightnessctl
-btop
-chafa
 cmatrix
 conky-all
-cpupower
-gnome-keyring
-celluloid
-mpv
-gthumb
-loupe
-ffmpegthumbnailer
-gnome-sushi
-nautilus-image-converter
-nautilus-share
-vlc
-gnome-disk-utility
-gparted
-ntfs-3g
-dosfstools
-mtools
-udisks2
-gvfs
-gvfs-backends
-gvfs-backends
-gvfs-backends
-gvfs-backends
-baobab
-evince
-file-roller
-p7zip-full
-unrar
-gnome-software
+sl
+bc
+
+# Desktop applications
+qbittorrent
 audacious
 audacious-plugins
-gnome-shell-extension-manager
-starship
-zsh
-vlc-plugin-base
-dconf-editor
-dialog
-dosfstools
-efibootmgr
-gnome-shell-extension-manager
-eza
-fastfetch
-fd-find
+celluloid
+mpv
+vlc
+gthumb
 flameshot
-fzf
-gdm3
-git
-
-google-chrome-stable
-code
-ventoy
-chrome-gnome-shell
-gnome-control-center
-gnome-screenshot
-gnome-session
-gnome-settings-daemon
-gnome-shell
-gnome-shell-extensions
-gnome-system-monitor
-gnome-terminal
-gnome-tweaks
-grub-efi-amd64
+ffmpegthumbnailer
+gparted
 gsimplecal
-gvfs
-gvfs-backends
-htop
-imagemagick
-intel-microcode
-jq
-keyd
-linux-image-generic
-linux-firmware
-magic-wormhole
-mesa-utils
-nano
-nautilus
-ncdu
-network-manager-gnome
-network-manager
-fonts-noto
-fonts-noto-cjk
-fonts-noto-color-emoji
-fonts-noto-extra
-os-prober
-pamixer
-papirus-icon-theme
-pavucontrol
-playerctl
-power-profiles-daemon
-pyenv
-ripgrep
-rsync
-sassc
-sl
+
+# Storage, networking, and hardware
+acpi
+alsa-utils
+blueman
+bluez
+brightnessctl
+dosfstools
+exfatprogs
+ntfs-3g
+mtools
+udisks2
 smbclient
-sudo
-sxhkd
-tk-dev
-tldr
-tree
-fonts-dejavu
-fonts-jetbrains-mono
-fonts-liberation
-# ttf-nerd-fonts-symbols -> manual install, see note above
-# ttf-noto-nerd -> manual install, see note above
-fonts-ubuntu
-wget
-wmctrl
-xcape
-xclip
-xdg-desktop-portal-gnome
-xdg-user-dirs
-xdg-user-dirs-gtk
-xdotool
-x11-xserver-utils
-xwayland
-zenity
-gdm3
-gnome-session
-gnome-control-center
-gnome-settings-daemon
-gvfs
-gvfs-backends
-xdg-desktop-portal
-xdg-desktop-portal-gnome
 network-manager
+network-manager-gnome
 pipewire
 pipewire-pulse
 wireplumber
-python3-pil
-python3-pypng
+pamixer
+pavucontrol
+playerctl
+power-profiles-daemon
+linux-tools-generic
+intel-microcode
+linux-firmware
+mesa-utils
+keyd
 
-exfatprogs
-firefox
+# Desktop automation and compatibility
+wmctrl
+xcape
+xclip
+xdotool
+x11-xserver-utils
+xwayland
+magic-wormhole
+
+# Boot support
+grub-efi-amd64
+os-prober
+efibootmgr
+
+# Containers (also useful outside Local AI)
+docker.io
+docker-compose-v2
+
