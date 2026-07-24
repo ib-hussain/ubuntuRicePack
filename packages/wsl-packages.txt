@@ -1,0 +1,112 @@
+# ==========================================================
+# wsl-pacman.txt
+# CLI-only subset of rice-pacman-core.txt, safe/functional
+# under WSL. Dropped categories and why:
+#   - Desktop shell & file manager: gnome-shell(-extensions),
+#     gdm, gnome-session/-settings-daemon/-control-center,
+#     nautilus(+plugins), extension-manager, gtk3/4,
+#     libadwaita, papirus-icon-theme, dconf(-editor) —
+#     no compositor session running in a CLI WSL instance.
+#   - GUI apps: firefox, vlc(+plugins), mpv, celluloid,
+#     gthumb, loupe, audacious(+plugins), qbittorrent,
+#     gnome-disk-utility, gparted, file-roller, baobab,
+#     papers, gnome-software, gsimplecal — use Windows-side
+#     equivalents instead.
+#   - Bare-metal-only: linux, linux-firmware, intel-ucode,
+#     grub, os-prober, efibootmgr, mesa, xorg-xwayland,
+#     xorg-xrandr — WSL owns the kernel and boot process;
+#     installing a second kernel inside the guest does nothing.
+#   - Hardware daemons with no guest access to real devices:
+#     bluez(-utils), blueman, brightnessctl, acpi,
+#     power-profiles-daemon, keyd, sxhkd, xcape, xdotool,
+#     wmctrl, playerctl, pamixer, pavucontrol.
+#   - Networking WSL already manages itself: networkmanager,
+#     network-manager-applet (installing/enabling these
+#     inside the guest fights WSL's own resolv.conf/NAT setup).
+#   - Audio/portal stack with no GUI session to serve:
+#     pipewire, pipewire-pulse, wireplumber,
+#     xdg-desktop-portal(-gnome).
+#   - Disk/partition tools not applicable without raw disk
+#     access: ntfs-3g, dosfstools, mtools, exfatprogs,
+#     udisks2, gvfs(+backends). Add these back only if you
+#     start using `wsl --mount` for physical disks.
+#   - Fonts: ttf-*, noto-fonts* — rendered by the terminal on
+#     the WINDOWS side (Windows Terminal / VS Code), not by
+#     anything running inside the Linux guest.
+#   - python-gobject, python-pillow, python-pypng — GTK
+#     scripting bindings and system-level Python libs that
+#     duplicate what pyenv + per-project venvs already give
+#     you with better isolation.
+#   - sassc — GTK theme build tool, irrelevant without a
+#     desktop shell to theme.
+#   - cpupower — inside WSL2's virtualized guest this can't
+#     actually change host CPU frequency scaling, so it's
+#     effectively a no-op here.
+#   - gnome-keyring — normally started by a GUI login session;
+#     add back only if a specific CLI tool (e.g. a git
+#     credential helper) needs a secret-storage backend.
+# ==========================================================
+
+# --- Base / build tools ---
+base-devel
+git
+curl
+wget
+unzip
+python
+less
+sudo
+nano
+tree
+
+# --- pyenv + Python build deps ---
+pyenv
+openssl
+zlib
+xz
+bzip2
+libffi
+readline
+sqlite
+tk
+ncurses
+
+# --- Modern CLI replacements ---
+btop
+htop
+eza
+bat
+fd
+ripgrep
+fzf
+zoxide
+jq
+ncdu
+tldr
+chafa
+p7zip
+7zip
+unrar
+
+# --- Shell / prompt ---
+zsh
+starship
+fastfetch
+
+# --- File transfer / remote ---
+rsync
+sshfs
+smbclient
+magic-wormhole
+
+# --- Containers / local AI (need systemd — see scripts/10) ---
+docker
+docker-compose
+ollama
+
+# --- Image handling (CLI) ---
+imagemagick
+
+# --- Misc ---
+sl
+cmatrix
