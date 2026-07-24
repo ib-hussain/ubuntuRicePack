@@ -1,7 +1,7 @@
 {
   "uuid": "arch-dock-icon@ib-hussain",
-  "name": "Rice Arch Show Apps Icon",
-  "description": "Forces Dash-to-Dock and GNOME Shell Show Applications icon to use an Arch Linux icon. Developed by Ibrahim Hussain's CHATGPT. github.com/ib-hussain/archRicePack",
+  "name": "Rice Show Applications Icon",
+  "description": "Uses a custom Show Applications icon with GNOME Shell, Ubuntu Dock, and Dash-to-Dock.",
   "shell-version": ["50"],
-  "version": 1
+  "version": 2
 }

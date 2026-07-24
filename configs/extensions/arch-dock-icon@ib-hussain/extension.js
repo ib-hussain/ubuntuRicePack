@@ -1,144 +1,243 @@
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import St from 'gi://St';
+
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-export default class RiceArchShowAppsIconExtension extends Extension {
+const DASH_TO_DOCK_SCHEMA = 'org.gnome.shell.extensions.dash-to-dock';
+
+export default class RiceShowAppsIconExtension extends Extension {
     enable() {
-        this._iconFile = this.dir.get_child('icons').get_child('arch-logo.png');
-        this._gicon = new Gio.FileIcon({file: this._iconFile});
-        this._signalIds = [];
+        this._signals = [];
+        this._patchedIcons = new Map();
+        this._patchIdleId = 0;
+        this._dockSettings = null;
 
-        // Patch once now (covers the icon already on screen, e.g. in the dash)
-        this._patchAll();
-
-        // Re-patch only when the overview is shown/hidden, since that's the
-        // only time the "Show Apps" icon actually gets created/recreated.
-        // This replaces the old 750ms full-tree-walk polling loop, which
-        // was the cause of the periodic Shell freezes.
-        const overviewShownId = Main.overview.connect('showing', () => this._patchAll());
-        const overviewHiddenId = Main.overview.connect('hidden', () => this._patchAll());
-        this._signalIds.push([Main.overview, overviewShownId]);
-        this._signalIds.push([Main.overview, overviewHiddenId]);
-
-        // Dash-to-Dock rebuilds its "Show Apps" button when its settings
-        // change (position, icon size, etc). If dash-to-dock is installed,
-        // listen for that too so the icon survives dock reconfiguration.
-        if (Main.overview.dash && Main.overview.dash._showAppsIcon) {
-            const dash = Main.overview.dash;
-            const dashId = dash.connect('notify::visible', () => this._patchAll());
-            this._signalIds.push([dash, dashId]);
+        const iconFile = this._findIconFile();
+        if (!iconFile) {
+            console.error(`${this.uuid}: no supported icon was found in the icons directory`);
+            return;
         }
+
+        this._gicon = new Gio.FileIcon({file: iconFile});
+
+        this._connect(Main.overview, 'showing', () => this._queuePatch());
+        this._connect(Main.overview, 'shown', () => this._queuePatch());
+        this._connect(Main.layoutManager, 'monitors-changed', () => this._queuePatch());
+        this._connect(Main.extensionManager, 'extension-state-changed',
+            () => this._queuePatch());
+
+        const schemaSource = Gio.SettingsSchemaSource.get_default();
+        if (schemaSource?.lookup(DASH_TO_DOCK_SCHEMA, true)) {
+            this._dockSettings = new Gio.Settings({
+                schema_id: DASH_TO_DOCK_SCHEMA,
+            });
+            this._connect(this._dockSettings, 'changed', () => this._queuePatch());
+        }
+
+        this._queuePatch();
     }
 
     disable() {
-        for (const [obj, id] of this._signalIds)
-            obj.disconnect(id);
-        this._signalIds = [];
-    }
-
-    _patchAll() {
-        try {
-            this._walk(Main.uiGroup);
-        } catch (e) {
+        if (this._patchIdleId) {
+            GLib.Source.remove(this._patchIdleId);
+            this._patchIdleId = 0;
         }
 
+        for (const [object, signalId] of this._signals) {
+            try {
+                object.disconnect(signalId);
+            } catch (error) {
+                this._logError('failed to disconnect a signal', error);
+            }
+        }
+        this._signals = [];
+
+        this._restoreIcons();
+
+        this._dockSettings = null;
+        this._gicon = null;
+        this._patchedIcons = null;
+    }
+
+    _findIconFile() {
+        const iconsDirectory = this.dir.get_child('icons');
+        const candidates = [
+            'show-apps-logo.png',
+            'show-apps-logo.svg',
+            'arch-logo.png',
+            'ubuntu-logo.png',
+            'ubuntu-logo.svg',
+        ];
+
+        for (const filename of candidates) {
+            const file = iconsDirectory.get_child(filename);
+            if (file.query_exists(null))
+                return file;
+        }
+
+        return null;
+    }
+
+    _connect(object, signal, callback) {
+        if (!object)
+            return;
+
         try {
-            this._walk(Main.layoutManager.uiGroup);
-        } catch (e) {
+            const signalId = object.connect(signal, callback);
+            this._signals.push([object, signalId]);
+        } catch (error) {
+            this._logError(`failed to connect ${signal}`, error);
         }
     }
 
-    _walk(actor) {
+    _queuePatch() {
+        if (!this._gicon || this._patchIdleId)
+            return;
+
+        this._patchIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this._patchIdleId = 0;
+
+            try {
+                this._patchCurrentIcons();
+            } catch (error) {
+                this._logError('failed to patch the Show Applications icon', error);
+            }
+
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _patchCurrentIcons() {
+        const icons = new Set();
+        const dash = Main.overview?.dash;
+
+        // GNOME's dash, Ubuntu Dock 105, and Dash-to-Dock 105 all expose
+        // their current Show Applications actor through the active dash.
+        this._collectIcons(dash?._showAppsIcon, icons);
+        this._collectIcons(dash?.showAppsButton, icons);
+
+        // Ubuntu Dock/Dash-to-Dock can create one dock per monitor. Only the
+        // primary dash is exposed above, so inspect the Shell UI once for
+        // additional actors that are strictly inside a "show-apps" widget.
+        this._collectShowAppsIcons(Main.uiGroup, false, icons);
+
+        for (const icon of icons)
+            this._patchIcon(icon);
+    }
+
+    _collectIcons(actor, icons) {
         if (!actor)
             return;
 
-        this._maybePatch(actor);
+        if (actor instanceof St.Icon)
+            icons.add(actor);
 
-        let children = [];
-        try {
-            if (typeof actor.get_children === 'function')
-                children = actor.get_children();
-        } catch (e) {
-            children = [];
-        }
-
-        for (const child of children)
-            this._walk(child);
+        for (const child of this._getChildren(actor))
+            this._collectIcons(child, icons);
     }
 
-    _styleClass(actor) {
-        try {
-            if (typeof actor.get_style_class_name === 'function')
-                return actor.get_style_class_name() || '';
-        } catch (e) {
-        }
+    _collectShowAppsIcons(actor, insideShowApps, icons) {
+        if (!actor)
+            return;
 
-        return '';
+        const classes = this._getStyleClasses(actor);
+        const isShowAppsActor = classes.some(styleClass =>
+            styleClass === 'show-apps' || styleClass === 'show-apps-icon');
+        const isInsideShowApps = insideShowApps || isShowAppsActor;
+
+        if (isInsideShowApps && actor instanceof St.Icon)
+            icons.add(actor);
+
+        for (const child of this._getChildren(actor))
+            this._collectShowAppsIcons(child, isInsideShowApps, icons);
     }
 
-    _hasShowAppsParent(actor) {
-        let current = actor;
+    _getChildren(actor) {
+        try {
+            return typeof actor.get_children === 'function'
+                ? actor.get_children()
+                : [];
+        } catch (error) {
+            return [];
+        }
+    }
 
-        for (let i = 0; i < 7 && current; i++) {
-            const klass = this._styleClass(current).toLowerCase();
+    _getStyleClasses(actor) {
+        try {
+            const classes = actor.get_style_class_name?.() ?? '';
+            return classes.split(/\s+/).filter(Boolean);
+        } catch (error) {
+            return [];
+        }
+    }
 
-            if (klass.includes('show-apps') || klass.includes('showapps'))
-                return true;
+    _patchIcon(icon) {
+        if (!this._patchedIcons.has(icon)) {
+            const original = {
+                gicon: this._readProperty(icon, 'get_gicon', 'gicon'),
+                iconName: this._readProperty(icon, 'get_icon_name', 'icon_name'),
+                destroySignalId: 0,
+            };
 
             try {
-                current = current.get_parent();
-            } catch (e) {
-                current = null;
+                original.destroySignalId = icon.connect('destroy', () => {
+                    this._patchedIcons?.delete(icon);
+                });
+            } catch (error) {
+                this._logError('failed to watch a Show Applications icon', error);
+            }
+
+            this._patchedIcons.set(icon, original);
+        }
+
+        try {
+            if (typeof icon.set_gicon === 'function')
+                icon.set_gicon(this._gicon);
+            else
+                icon.gicon = this._gicon;
+        } catch (error) {
+            this._logError('failed to set a Show Applications icon', error);
+        }
+    }
+
+    _restoreIcons() {
+        for (const [icon, original] of this._patchedIcons ?? []) {
+            try {
+                if (original.destroySignalId)
+                    icon.disconnect(original.destroySignalId);
+
+                this._writeProperty(
+                    icon, 'set_icon_name', 'icon_name', original.iconName);
+                this._writeProperty(
+                    icon, 'set_gicon', 'gicon', original.gicon);
+            } catch (error) {
+                this._logError('failed to restore a Show Applications icon', error);
             }
         }
 
-        return false;
+        this._patchedIcons?.clear();
     }
 
-    _iconName(actor) {
+    _readProperty(object, getter, property) {
         try {
-            if (typeof actor.get_icon_name === 'function')
-                return actor.get_icon_name() || '';
-        } catch (e) {
-        }
-
-        try {
-            return actor.icon_name || '';
-        } catch (e) {
-            return '';
+            return typeof object[getter] === 'function'
+                ? object[getter]()
+                : object[property];
+        } catch (error) {
+            return null;
         }
     }
 
-    _maybePatch(actor) {
-        if (!(actor instanceof St.Icon))
-            return;
+    _writeProperty(object, setter, property, value) {
+        if (typeof object[setter] === 'function')
+            object[setter](value);
+        else
+            object[property] = value;
+    }
 
-        const name = this._iconName(actor).toLowerCase();
-        const parentMatch = this._hasShowAppsParent(actor);
-
-        const nameMatch =
-            name.includes('view-app-grid') ||
-            name.includes('applications-all') ||
-            name.includes('applications-system') ||
-            name.includes('start-here');
-
-        if (!parentMatch && !nameMatch)
-            return;
-
-        try {
-            actor.set_gicon(this._gicon);
-        } catch (e) {
-            try {
-                actor.gicon = this._gicon;
-            } catch (e2) {
-            }
-        }
-
-        try {
-            actor.set_icon_size(48);
-        } catch (e) {
-        }
+    _logError(message, error) {
+        console.error(`${this.uuid}: ${message}: ${error?.stack ?? error}`);
     }
 }
-
