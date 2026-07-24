@@ -6,100 +6,199 @@ source "$SCRIPT_DIR/00-common.sh"
 
 require_user_session
 
-log "Applying final custom Show Applications dock icon."
+log "Creating Windows-style Ubuntu desktop application launchers."
 
-EXT_UUID="arch-dock-icon@ib-hussain"
-EXT_DIR="$HOME/.local/share/gnome-shell/extensions/$EXT_UUID"
-ICON_THEME="$HOME/.local/share/icons/Rice-Papirus"
+DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || true)"
+if [[ -z "$DESKTOP_DIR" ]]; then
+    DESKTOP_DIR="$HOME/Desktop"
+fi
 
-SRC=""
+APPLICATION_DIR="$HOME/.local/share/applications"
+LOCAL_BIN="$HOME/.local/bin"
+LOCAL_ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
 
-for f in \
-    "$REPO_ROOT/assets/arch-icons/arch-logo.png" \
-    "$REPO_ROOT/assets/arch-icons/arch-logo.webp" 
-do
-    if [[ -f "$f" ]]; then
-        SRC="$f"
-        break
+mkdir -p "$DESKTOP_DIR" "$APPLICATION_DIR" "$LOCAL_BIN" "$LOCAL_ICON_DIR"
+
+find_desktop_file() {
+    local desktop_id=""
+    local directory=""
+
+    for desktop_id in "$@"; do
+        for directory in \
+            "$HOME/.local/share/applications" \
+            /usr/local/share/applications \
+            /usr/share/applications
+        do
+            if [[ -f "$directory/$desktop_id" ]]; then
+                printf '%s\n' "$directory/$desktop_id"
+                return 0
+            fi
+        done
+    done
+
+    return 1
+}
+
+trust_desktop_launcher() {
+    local launcher="$1"
+
+    chmod u+x "$launcher"
+
+    if command -v gio >/dev/null 2>&1; then
+        gio set "$launcher" metadata::trusted true >/dev/null 2>&1 || true
     fi
-done
+}
 
-if [[ -z "$SRC" ]]; then
-    warn "No custom Arch icon source found. Skipping Show Applications icon patch."
-    exit 0
+install_application_launcher() {
+    local display_name="$1"
+    shift
+
+    local source_file=""
+    source_file="$(find_desktop_file "$@" || true)"
+
+    if [[ -z "$source_file" ]]; then
+        warn "No installed desktop file found for: $display_name"
+        return 0
+    fi
+
+    local desktop_id
+    desktop_id="$(basename "$source_file")"
+
+    cp -a "$source_file" "$DESKTOP_DIR/$desktop_id"
+    trust_desktop_launcher "$DESKTOP_DIR/$desktop_id"
+
+    log "Created desktop launcher: $display_name ($desktop_id)"
+}
+
+install_openwebui_launcher() {
+    local wrapper="$LOCAL_BIN/open-openwebui"
+    local desktop_file="$APPLICATION_DIR/ib-openwebui.desktop"
+    local desktop_copy="$DESKTOP_DIR/ib-openwebui.desktop"
+    local icon_name="applications-internet"
+    local icon_source=""
+
+    for candidate in \
+        "$REPO_ROOT/assets/arch-icons/open-webui.svg" \
+        "$REPO_ROOT/assets/open-webui.svg" \
+        "$REPO_ROOT/assets/openwebui.svg"
+    do
+        if [[ -f "$candidate" ]]; then
+            icon_source="$candidate"
+            break
+        fi
+    done
+
+    if [[ -n "$icon_source" ]]; then
+        cp -a "$icon_source" "$LOCAL_ICON_DIR/ib-openwebui.svg"
+        icon_name="ib-openwebui"
+    fi
+
+    cat > "$wrapper" <<'WRAPPER'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/ubuntuRicePack/openwebui.env"
+
+if [[ -r "$CONFIG_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$CONFIG_FILE"
 fi
 
-install_pacman_package imagemagick gtk3
+OPEN_WEBUI_PORT="${OPEN_WEBUI_PORT:-8080}"
+OPEN_WEBUI_URL="${OPEN_WEBUI_URL:-http://127.0.0.1:${OPEN_WEBUI_PORT}}"
 
-mkdir -p "$ICON_THEME" "$EXT_DIR/icons"
+exec xdg-open "$OPEN_WEBUI_URL"
+WRAPPER
+    chmod +x "$wrapper"
 
-WORK="$HOME/.cache/rice-showapps-png-fix"
-rm -rf "$WORK"
-mkdir -p "$WORK"
+    cat > "$desktop_file" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Open WebUI
+Comment=Open the local Open WebUI interface
+Exec=$wrapper
+Icon=$icon_name
+Terminal=false
+Categories=Network;Utility;
+StartupNotify=true
+DESKTOP
 
-MASTER="$WORK/arch-logo.png"
+    cp -a "$desktop_file" "$desktop_copy"
+    trust_desktop_launcher "$desktop_copy"
 
-log "Using source icon: $SRC"
-# magick "$SRC" -background none -alpha on -resize 1024x1024 -gravity center -extent 1024x1024 "$MASTER"
-cp "$REPO_ROOT/assets/arch-icons/arch-logo.png" "$MASTER"
+    log "Created desktop launcher: Open WebUI"
+}
 
-log "Writing PNG directly into GNOME Shell extension."
-# magick "$MASTER" -resize 512x512 "$EXT_DIR/icons/arch-logo.png"
-cp "$REPO_ROOT/assets/arch-icons/arch-logo.png" "$EXT_DIR/icons/arch-logo.png"
-# magick "$MASTER" -resize 512x512 "$EXT_DIR/arch-logo.png"
-cp "$REPO_ROOT/assets/arch-icons/arch-logo.png" "$EXT_DIR/arch-logo.png"
+ding_has_key() {
+    local key="$1"
 
-cp -r "$REPO_ROOT/configs/extensions/arch-dock-icon@ib-hussain"/* "$EXT_DIR/"
+    gsettings list-keys org.gnome.shell.extensions.ding 2>/dev/null |
+        grep -Fqx "$key"
+}
 
-# log "Writing icon-theme PNG fallbacks."
+set_ding_boolean() {
+    local key="$1"
+    local value="$2"
 
-# ICON_NAMES=(
-#     "applications-all"
-#     "applications-all-symbolic"
-#     "applications-system-symbolic"
-#     "view-app-grid"
-#     "view-app-grid-symbolic"
-#     "start-here"
-#     "start-here-symbolic"
-#     "start-here-archlinux"
-#     "distributor-logo-archlinux"
-# )
+    if ding_has_key "$key"; then
+        gsettings set org.gnome.shell.extensions.ding "$key" "$value" || true
+    fi
+}
 
-# SIZES=(16 22 24 32 48 64 96 128 256 512)
+configure_ding() {
+    if ! gsettings list-schemas |
+            grep -Fqx "org.gnome.shell.extensions.ding"; then
+        warn "DING settings schema is unavailable; desktop launchers were still created."
+        return 0
+    fi
 
-# for size in "${SIZES[@]}"; do
-#     for context in apps actions categories places panel symbolic/actions symbolic/categories symbolic/places; do
-#         dir="$ICON_THEME/${size}x${size}/$context"
-#         mkdir -p "$dir"
+    # Use DING's real Trash icon so opening, emptying, and drag-to-trash work.
+    set_ding_boolean show-trash true
+    set_ding_boolean show-home false
+    set_ding_boolean show-volumes false
+    set_ding_boolean show-network-volumes false
+    set_ding_boolean show-link-emblem true
 
-#         for name in "${ICON_NAMES[@]}"; do
-#             magick "$MASTER" -resize "${size}x${size}" "$dir/$name.png"
-#             rm -f "$dir/$name.svg"
-#         done
-#     done
-# done
+    if gnome-extensions list | grep -Fqx "ding@rastersoft.com"; then
+        gnome-extensions enable "ding@rastersoft.com" || true
+    fi
+}
 
-dconf_write /org/gnome/shell/extensions/dash-to-dock/show-show-apps-button true
-dconf_write /org/gnome/shell/extensions/dash-to-dock/show-apps-at-top true
-gs_set org.gnome.shell.extensions.dash-to-dock show-show-apps-button true
-gs_set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
-gs_set org.gnome.desktop.interface icon-theme "Rice-Papirus"
+install_application_launcher \
+    "Google Chrome" \
+    "google-chrome.desktop" \
+    "google-chrome-stable.desktop"
 
-gtk-update-icon-cache -f -t "$ICON_THEME" >/dev/null 2>&1 || true
+install_application_launcher \
+    "Visual Studio Code" \
+    "code.desktop" \
+    "visual-studio-code.desktop"
 
-if gnome-extensions list | grep -qx "$EXT_UUID"; then
-    gnome-extensions disable "$EXT_UUID" >/dev/null 2>&1 || true
-    sleep 1
-    gnome-extensions enable "$EXT_UUID" >/dev/null 2>&1 || true
-else
-    warn "$EXT_UUID installed but GNOME may index it after logout/login."
+install_application_launcher \
+    "Files" \
+    "org.gnome.Nautilus.desktop"
+
+install_application_launcher \
+    "Terminal" \
+    "org.gnome.Ptyxis.desktop" \
+    "org.gnome.Console.desktop" \
+    "org.gnome.Terminal.desktop"
+
+install_application_launcher \
+    "Audacious" \
+    "audacious.desktop"
+
+install_openwebui_launcher
+configure_ding
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$APPLICATION_DIR" >/dev/null 2>&1 || true
 fi
 
-if gnome-extensions list | grep -qx "dash-to-dock@micxgx.gmail.com"; then
-    gnome-extensions disable dash-to-dock@micxgx.gmail.com >/dev/null 2>&1 || true
-    sleep 1
-    gnome-extensions enable dash-to-dock@micxgx.gmail.com >/dev/null 2>&1 || true
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" \
+        >/dev/null 2>&1 || true
 fi
 
-log "Custom Show Applications dock icon patch complete."
-log "If it does not appear immediately, log out/in or reboot once."
+log "Windows-style desktop launcher setup complete."

@@ -1,47 +1,321 @@
 #!/usr/bin/env bash
+# Shared helpers for ubuntuRicePack.
+#
+# This file is sourced by the numbered installer stages. It deliberately
+# contains no Arch/pacman/AUR logic.
+
 set -Eeuo pipefail
 IFS=$'\n\t'
+umask 022
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-LOG_DIR="$HOME/.local/state/arch-rice-pack"
-mkdir -p "$LOG_DIR"
-LOG_FILE="${LOG_FILE:-$LOG_DIR/install-rice-$(date +%Y%m%d-%H%M%S).log}"
-TARGET_USER="ibrahim"
-# USER="ibrahim"
+if [[ -n "${UBUNTU_RICE_COMMON_LOADED:-}" ]]; then
+    return 0 2>/dev/null || exit 0
+fi
+readonly UBUNTU_RICE_COMMON_LOADED=1
 
-log() {
-    echo "[INFO] $*" | tee -a "$LOG_FILE"
+COMMON_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="${ROOT_DIR:-$(cd -- "$COMMON_SCRIPT_DIR/.." && pwd)}"
+export REPO_ROOT
+
+PROJECT_NAME="ubuntuRicePack"
+RUN_ID="${RICE_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
+
+detect_target_user() {
+    local candidate="${RICE_TARGET_USER:-${TARGET_USER:-}}"
+
+    if [[ -z "$candidate" && "$EUID" -ne 0 ]]; then
+        candidate="$(id -un)"
+    elif [[ -z "$candidate" && -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+        candidate="$SUDO_USER"
+    fi
+
+    if [[ -z "$candidate" ]] || ! id "$candidate" >/dev/null 2>&1; then
+        printf 'Unable to determine the target user. Set RICE_TARGET_USER.\n' >&2
+        return 1
+    fi
+
+    printf '%s\n' "$candidate"
 }
 
-warn() {
-    echo "[WARN] $*" | tee -a "$LOG_FILE"
-}
+TARGET_USER="$(detect_target_user)"
+TARGET_GROUP="$(id -gn "$TARGET_USER")"
+TARGET_HOME="$(
+    getent passwd "$TARGET_USER" |
+        awk -F: 'NR == 1 {print $6}'
+)"
 
-fail() {
-    echo "[ERROR] $*" | tee -a "$LOG_FILE"
+if [[ -z "$TARGET_HOME" || "$TARGET_HOME" != /* ]]; then
+    printf 'Unable to determine a valid home directory for %s.\n' "$TARGET_USER" >&2
     exit 1
+fi
+
+if [[ "$EUID" -ne 0 && "$(id -un)" == "$TARGET_USER" ]]; then
+    USER_STATE_HOME="${XDG_STATE_HOME:-$TARGET_HOME/.local/state}"
+else
+    USER_STATE_HOME="$TARGET_HOME/.local/state"
+fi
+
+STATE_DIR="$USER_STATE_HOME/$PROJECT_NAME"
+LOG_DIR="$STATE_DIR/logs"
+BACKUP_ROOT="${RICE_BACKUP_ROOT:-$STATE_DIR/backups/$RUN_ID}"
+
+mkdir -p -- "$LOG_DIR" "$BACKUP_ROOT"
+LOG_FILE="${LOG_FILE:-$LOG_DIR/install-$RUN_ID.log}"
+
+export PROJECT_NAME RUN_ID TARGET_USER TARGET_GROUP TARGET_HOME
+export STATE_DIR LOG_DIR BACKUP_ROOT LOG_FILE
+
+timestamp() {
+    date '+%Y-%m-%d %H:%M:%S'
+}
+log() {
+    printf '%s [INFO] %s\n' "$(timestamp)" "$*" | tee -a "$LOG_FILE"
+}
+warn() {
+    printf '%s [WARN] %s\n' "$(timestamp)" "$*" | tee -a "$LOG_FILE" >&2
+}
+fail() {
+    printf '%s [ERROR] %s\n' "$(timestamp)" "$*" | tee -a "$LOG_FILE" >&2
+    exit 1
+}
+on_error() {
+    local status="$1"
+    local line="$2"
+    local command="$3"
+
+    warn "Command failed with status $status at line $line: $command"
+    return "$status"
+}
+
+trap 'on_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
+
+declare -a RICE_TEMP_PATHS=()
+
+register_temp_path() {
+    local path="$1"
+    [[ -n "$path" ]] || return 0
+    RICE_TEMP_PATHS+=("$path")
+}
+cleanup_temp_paths() {
+    local path=""
+    local temp_root="${TMPDIR:-/tmp}"
+
+    for path in "${RICE_TEMP_PATHS[@]}"; do
+        [[ -n "$path" ]] || continue
+        case "$path" in
+            "$temp_root"/ubuntuRicePack.*|/tmp/ubuntuRicePack.*)
+                rm -rf -- "$path"
+                ;;
+            *)
+                warn "Refusing to remove unexpected temporary path: $path"
+                ;;
+        esac
+    done
+}
+
+trap cleanup_temp_paths EXIT
+
+make_temp_dir() {
+    mktemp -d "${TMPDIR:-/tmp}/ubuntuRicePack.XXXXXX"
+}
+
+make_temp_file() {
+    mktemp "${TMPDIR:-/tmp}/ubuntuRicePack.XXXXXX"
+}
+
+run_root() {
+    if [[ "$EUID" -eq 0 ]]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
+as_target_user() {
+    if [[ "$EUID" -eq 0 && "$TARGET_USER" != "root" ]]; then
+        runuser -u "$TARGET_USER" -- env HOME="$TARGET_HOME" USER="$TARGET_USER" "$@"
+    else
+        "$@"
+    fi
+}
+
+require_regular_user() {
+    if [[ "$EUID" -eq 0 ]]; then
+        fail "Run this stage as the target user, not with sudo."
+    fi
+
+    if [[ "$(id -un)" != "$TARGET_USER" ]]; then
+        fail "Current user $(id -un) does not match target user $TARGET_USER."
+    fi
+}
+
+have_user_session() {
+    [[ "$EUID" -ne 0 &&
+        -n "${DBUS_SESSION_BUS_ADDRESS:-}" &&
+        -n "${XDG_RUNTIME_DIR:-}" ]]
 }
 
 require_user_session() {
-    if [[ "$EUID" -eq 0 ]]; then
-        fail "Do not run as root. Run as your normal desktop user."
-    fi
-
-    if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" || -z "${XDG_RUNTIME_DIR:-}" ]]; then
-        fail "GNOME session variables missing. Log into GNOME and run from GNOME Terminal."
+    require_regular_user
+    if ! have_user_session; then
+        fail "GNOME session variables are missing. Log into GNOME and run this stage from a terminal."
     fi
 }
 
+is_wsl() {
+    [[ -n "${WSL_INTEROP:-}" ]] ||
+        grep -qiE '(microsoft|wsl)' /proc/sys/kernel/osrelease /proc/version 2>/dev/null
+}
+
+have_systemd() {
+    [[ "$(ps -p 1 -o comm= 2>/dev/null | tr -d '[:space:]')" == "systemd" ]]
+}
+
+require_ubuntu() {
+    local distro_id=""
+    local distro_like=""
+
+    [[ -r /etc/os-release ]] || fail "/etc/os-release is unavailable."
+    # shellcheck disable=SC1091
+    source /etc/os-release
+    distro_id="${ID:-}"
+    distro_like="${ID_LIKE:-}"
+
+    if [[ "$distro_id" != "ubuntu" && " $distro_like " != *" ubuntu "* ]]; then
+        if [[ "${ALLOW_UNSUPPORTED_DISTRO:-0}" == "1" ]]; then
+            warn "Unsupported distribution '$distro_id' allowed by ALLOW_UNSUPPORTED_DISTRO=1."
+        else
+            fail "This installer targets Ubuntu; detected '${PRETTY_NAME:-$distro_id}'."
+        fi
+    fi
+
+    log "Detected ${PRETTY_NAME:-Ubuntu} (${VERSION_CODENAME:-unknown codename})."
+}
+
+require_command() {
+    local command_name="$1"
+    command -v "$command_name" >/dev/null 2>&1 ||
+        fail "Required command is unavailable: $command_name"
+}
+
+detect_command() {
+    local command_name=""
+
+    for command_name in "$@"; do
+        if command -v "$command_name" >/dev/null 2>&1; then
+            printf '%s\n' "$command_name"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+sudo_validate() {
+    if [[ "$EUID" -ne 0 ]]; then
+        sudo -v || fail "sudo authentication failed."
+    fi
+}
+
+apt_get() {
+    run_root env DEBIAN_FRONTEND=noninteractive \
+        apt-get \
+        -o Dpkg::Options::=--force-confold \
+        -o Acquire::Retries=3 \
+        "$@"
+}
+
+apt_update() {
+    log "Refreshing APT package metadata."
+    apt_get update
+}
+
+apt_install() {
+    [[ "$#" -gt 0 ]] || return 0
+    apt_get install -y "$@"
+}
+
+apt_purge() {
+    [[ "$#" -gt 0 ]] || return 0
+    apt_get purge -y "$@"
+}
+
+apt_package_available() {
+    local package_name="$1"
+    apt-cache show --no-all-versions "$package_name" 2>/dev/null |
+        grep -q '^Package:'
+}
+
+apt_package_installed() {
+    local package_name="$1"
+    dpkg-query -W -f='${db:Status-Status}\n' "$package_name" 2>/dev/null |
+        grep -qx 'installed'
+}
+
+download_file() {
+    local url="$1"
+    local destination="$2"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl \
+            --fail \
+            --location \
+            --show-error \
+            --silent \
+            --retry 3 \
+            --retry-all-errors \
+            --connect-timeout 20 \
+            --output "$destination" \
+            "$url"
+    elif command -v wget >/dev/null 2>&1; then
+        wget --tries=3 --timeout=20 --output-document="$destination" "$url"
+    else
+        fail "Neither curl nor wget is available for downloading $url."
+    fi
+
+    [[ -s "$destination" ]] || fail "Downloaded file is empty: $url"
+}
+
+verify_sha256() {
+    local file="$1"
+    local expected="${2#sha256:}"
+    local actual=""
+
+    [[ -n "$expected" ]] || fail "No SHA-256 digest was supplied for $file."
+    actual="$(sha256sum "$file" | awk '{print $1}')"
+
+    if [[ "$actual" != "$expected" ]]; then
+        fail "SHA-256 verification failed for $(basename "$file")."
+    fi
+
+    log "Verified SHA-256 for $(basename "$file")."
+}
+
+install_root_file() {
+    local destination="$1"
+    local mode="${2:-0644}"
+    local temporary=""
+
+    temporary="$(make_temp_file)"
+    register_temp_path "$temporary"
+    cat >"$temporary"
+    run_root install -D -m "$mode" "$temporary" "$destination"
+}
+
 schema_exists() {
-    gsettings list-schemas | grep -qx "$1"
+    local schema="$1"
+    command -v gsettings >/dev/null 2>&1 &&
+        gsettings list-schemas 2>/dev/null |
+            grep -Fxq "$schema"
 }
 
 schema_key_exists() {
     local schema="$1"
     local key="$2"
+
     schema_exists "$schema" || return 1
-    gsettings list-keys "$schema" 2>/dev/null | grep -qx "$key"
+    gsettings list-keys "$schema" 2>/dev/null |
+        grep -Fxq "$key"
 }
 
 gs_set() {
@@ -49,8 +323,17 @@ gs_set() {
     local key="$2"
     local value="$3"
 
+    if ! have_user_session; then
+        warn "No graphical user session; deferred gsettings value: $schema $key"
+        return 0
+    fi
+
     if schema_key_exists "$schema" "$key"; then
-        gsettings set "$schema" "$key" "$value" 2>>"$LOG_FILE" && log "gsettings set $schema $key $value" || warn "Could not set $schema $key"
+        if gsettings set "$schema" "$key" "$value" 2>>"$LOG_FILE"; then
+            log "Applied gsettings value: $schema $key"
+        else
+            warn "Could not set gsettings value: $schema $key"
+        fi
     else
         warn "Missing gsettings key: $schema $key"
     fi
@@ -59,90 +342,87 @@ gs_set() {
 dconf_write() {
     local path="$1"
     local value="$2"
-    dconf write "$path" "$value" 2>>"$LOG_FILE" && log "dconf write $path $value" || warn "Could not write $path"
+
+    if ! have_user_session; then
+        warn "No graphical user session; deferred dconf value: $path"
+        return 0
+    fi
+
+    if dconf write "$path" "$value" 2>>"$LOG_FILE"; then
+        log "Applied dconf value: $path"
+    else
+        warn "Could not write dconf value: $path"
+    fi
 }
 
 backup_path() {
-    local path="$1"
-    local backup_root="$HOME/rice-install-backups/$(date +%Y%m%d-%H%M%S)"
+    local source_path="$1"
+    local relative_path=""
+    local destination=""
 
-    if [[ -e "$path" || -L "$path" ]]; then
-        mkdir -p "$backup_root/$(dirname "${path#$HOME/}")"
-        cp "$path" "$backup_root/${path#$HOME/}" 2>/dev/null || true
-        log "Backed up $path to $backup_root"
+    [[ -e "$source_path" || -L "$source_path" ]] || return 0
+    [[ "$source_path" == /* ]] || fail "backup_path requires an absolute path: $source_path"
+
+    relative_path="${source_path#/}"
+    destination="$BACKUP_ROOT/$relative_path"
+    mkdir -p -- "$(dirname -- "$destination")"
+
+    if [[ -e "$destination" || -L "$destination" ]]; then
+        return 0
     fi
+
+    cp -a -- "$source_path" "$destination"
+    log "Backed up $source_path -> $destination"
 }
 
 copy_dir_contents() {
-    local src="$1"
-    local dest="$2"
+    local source_dir="$1"
+    local destination_dir="$2"
 
-    if [[ -d "$src" ]]; then
-        mkdir -p "$dest"
-        cp -r "$src"/. "$dest"/
-        log "Copied $src -> $dest"
-    else
-        warn "Directory missing, skipped: $src"
+    if [[ ! -d "$source_dir" ]]; then
+        warn "Directory is absent; skipped: $source_dir"
+        return 0
     fi
+
+    mkdir -p -- "$destination_dir"
+    cp -a -- "$source_dir"/. "$destination_dir"/
+    log "Copied directory contents: $source_dir -> $destination_dir"
 }
 
 copy_file() {
-    local src="$1"
-    local dest="$2"
+    local source_file="$1"
+    local destination_file="$2"
+    local mode="${3:-}"
 
-    if [[ -f "$src" ]]; then
-        mkdir -p "$(dirname "$dest")"
-        cp "$src" "$dest"
-        log "Copied $src -> $dest"
-    else
-        warn "File missing, skipped: $src"
-    fi
-}
-
-detect_command() {
-    local cmd
-    for cmd in "$@"; do
-        if command -v "$cmd" >/dev/null 2>&1; then
-            printf '%s\n' "$cmd"
-            return 0
-        fi
-    done
-    return 1
-}
-
-install_pacman_package() {
-    local pkg="$1"
-    [[ -n "$pkg" ]] || return 0
-    sudo pacman -S --needed --noconfirm "$pkg" || warn "pacman failed for package: $pkg"
-}
-
-ensure_yay() {
-    if command -v yay >/dev/null 2>&1; then
-        log "yay already installed."
+    if [[ ! -f "$source_file" ]]; then
+        warn "File is absent; skipped: $source_file"
         return 0
     fi
-    sudo chown -R "$USER:$USER" "/home/$USER"
 
-    log "Installing yay from AUR."
-    sudo pacman -S --needed --noconfirm git base-devel
-    local build_dir="$HOME/.cache/rice-aur-builds/yay"
-    rm -rf "$build_dir"
-    sudo mkdir -p "$(dirname "$build_dir")"
-    sudo chown -R "$USER:$USER" "$(dirname "$build_dir")"
-    git clone https://aur.archlinux.org/yay-bin.git "$build_dir"
-    cd "$build_dir" 
-    (chown -R "$USER:$USER" "$build_dir" && MAKEFLAGS=\"-j4\" makepkg -si  --noconfirm)
+    mkdir -p -- "$(dirname -- "$destination_file")"
+    cp -a -- "$source_file" "$destination_file"
+    if [[ -n "$mode" ]]; then
+        chmod "$mode" "$destination_file"
+    fi
+    log "Copied file: $source_file -> $destination_file"
 }
 
-install_aur_package() {
-    local pkg="$1"
-    [[ -n "$pkg" ]] || return 0
+safe_chown_target() {
+    local path="$1"
 
-    ensure_yay
-
-    if pacman -Qq "$pkg" >/dev/null 2>&1; then
-        log "AUR package already installed: $pkg"
-    else
-        yay -S --needed --noconfirm "$pkg" || warn "yay failed for package: $pkg"
+    [[ -e "$path" || -L "$path" ]] || return 0
+    if [[ "$EUID" -eq 0 && "$TARGET_USER" != "root" ]]; then
+        chown -R "$TARGET_USER:$TARGET_GROUP" "$path"
     fi
 }
+
+assert_repo_path() {
+    local relative_path="$1"
+    [[ -e "$REPO_ROOT/$relative_path" ]] ||
+        fail "Required repository path is missing: $relative_path"
+}
+
+log "Loaded shared helpers for $PROJECT_NAME."
+log "Repository: $REPO_ROOT"
+log "Target user: $TARGET_USER ($TARGET_HOME)"
+log "Log file: $LOG_FILE"
