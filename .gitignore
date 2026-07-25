@@ -1,0 +1,14 @@
+*.log
+**tmp**
+*.bak
+*.old
+*.ps1
+!.gitignore
+**ignore**.*
+# **.*ignore**
+Screenshot*.png
+reqs.txt
+.webui_secret_key
+*.tar.gz
+*temp.*
+archive-settings/*
