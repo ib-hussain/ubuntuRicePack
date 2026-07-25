@@ -301,7 +301,7 @@ verify_terminal_environment() {
     done
 
     if command -v fc-match >/dev/null 2>&1; then
-        actual="$(fc-match -f '%{family}\n' 'Noto Sans Mono' | head -n 1)"
+        actual="$(fc-match -f '%{family}\n' 'Noto Sans Mono' 2>/dev/null)"
         log "Noto monospace match: $actual"
         printf 'font\tNoto Sans Mono\tPASS\t%s\n' \
             "$actual" >>"$REPORT_FILE"
@@ -310,10 +310,12 @@ verify_terminal_environment() {
             >>"$REPORT_FILE"
     fi
 
-    for actual in "JetBrainsMono Nerd Font" "NotoSansM Nerd Font" "Symbols Nerd Font"; do
-        if command -v fc-list >/dev/null 2>&1 &&
-            fc-list : family 2>/dev/null | grep -Fqi "$actual"
-        then
+    for actual in \
+        "JetBrainsMono Nerd Font" \
+        "NotoSansM Nerd Font" \
+        "Symbols Nerd Font"
+    do
+        if font_family_available "$actual"; then
             printf 'font\t%s\tPASS\tinstalled\n' \
                 "$actual" >>"$REPORT_FILE"
         else

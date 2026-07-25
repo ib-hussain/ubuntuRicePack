@@ -337,13 +337,7 @@ verify_nerd_fonts() {
         "NotoSansM Nerd Font" \
         "Symbols Nerd Font"
     do
-        match="$(
-            fc-list : family 2>/dev/null |
-                grep -Fi "$family" |
-                head -n 1 ||
-                true
-        )"
-        if [[ -n "$match" ]]; then
+        if match="$(font_family_match "$family")"; then
             report_line font "$family" installed "$match" PASS
         else
             record_failure font "$family" installed "not matched"

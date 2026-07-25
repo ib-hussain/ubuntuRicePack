@@ -2,11 +2,8 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-# RUN USING:
-# chmod +x apply-ubuntu-gnome-best-settings.sh
-# ./apply-ubuntu-gnome-best-settings.sh --dry-run
 ###############################################################################
-# Ibrahim's GNOME 50 "best settings" importer — Arch Linux edition
+# Ibrahim's GNOME 50 "best settings" importer — Ubuntu edition
 #
 # Source snapshot:
 #   Arch Linux, GNOME Shell 50.2, exported 2026-07-24.
@@ -14,12 +11,12 @@ IFS=$'\n\t'
 # This is intentionally a curated, schema-aware importer. It does NOT run
 # `dconf load /`, because a root dconf import would also copy stale application
 # state, obsolete distro folders, hardware connector names, command histories,
-# absolute /home/ibrahim paths, and settings for schemas absent on the target.
+# absolute /home/ibrahim paths, and settings for schemas absent on Ubuntu.
 #
 # What this script does:
 #   - Applies the complete portable desktop, input, privacy, power, window,
 #     keybinding, Nautilus, terminal, application, and extension preferences.
-#   - Preserves the upstream Dash-to-Dock configuration used on Arch.
+#   - Translates Dash-to-Dock intent to Ubuntu Dock.
 #   - Resolves installed desktop IDs and terminal/browser commands at runtime.
 #   - Creates all seven custom keyboard shortcuts.
 #   - Uses an installed rice wallpaper instead of a hard-coded source hostname.
@@ -27,17 +24,17 @@ IFS=$'\n\t'
 #   - Backs up the current dconf database before making changes.
 #
 # Usage:
-#   ./apply-arch-gnome-best-settings.sh
-#   ./apply-arch-gnome-best-settings.sh --dry-run
-#   ./apply-arch-gnome-best-settings.sh --no-backup
-#   ./apply-arch-gnome-best-settings.sh --no-extensions
-#   ./apply-arch-gnome-best-settings.sh --force
+#   ./apply-ubuntu-gnome-best-settings.sh
+#   ./apply-ubuntu-gnome-best-settings.sh --dry-run
+#   ./apply-ubuntu-gnome-best-settings.sh --no-backup
+#   ./apply-ubuntu-gnome-best-settings.sh --no-extensions
+#   ./apply-ubuntu-gnome-best-settings.sh --force
 #
 # Run this as the target desktop user from a logged-in GNOME session. Do not
 # run it with sudo.
 ###############################################################################
 
-TARGET_PLATFORM="arch"
+TARGET_PLATFORM="ubuntu"
 SCRIPT_VERSION="1.0.0"
 
 DRY_RUN=0
@@ -69,13 +66,13 @@ die() {
 usage() {
     cat <<'USAGE'
 Usage:
-  ./apply-arch-gnome-best-settings.sh [options]
+  ./apply-ubuntu-gnome-best-settings.sh [options]
 
 Options:
   --dry-run        Show changes without writing them.
   --no-backup      Do not export the current dconf database first.
   --no-extensions  Apply extension preferences but do not change states.
-  --force          Allow use on a distro not identified as Arch Linux.
+  --force          Allow use on a distro not identified as Ubuntu.
   --version        Print the script version.
   --help           Show this help.
 
@@ -1833,4 +1830,3 @@ main() {
 }
 
 main "$@"
-

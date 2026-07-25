@@ -274,12 +274,15 @@ apt_purge() {
     apt_get purge -y "$@"
 }
 
+# apt_package_available() {
+#     local package_name="$1"
+#     apt-cache show --no-all-versions "$package_name" 2>/dev/null |
+#         grep -q '^Package:'
+# }
 apt_package_available() {
     local package_name="$1"
-    apt-cache show --no-all-versions "$package_name" 2>/dev/null |
-        grep -q '^Package:'
+    apt-cache show --no-all-versions "$package_name" >/dev/null 2>&1
 }
-
 apt_package_exists() {
     apt_package_available "$1"
 }
@@ -288,6 +291,23 @@ apt_package_installed() {
     local package_name="$1"
     dpkg-query -W -f='${db:Status-Status}\n' "$package_name" 2>/dev/null |
         grep -qx 'installed'
+}
+
+font_family_match() {
+    local expected_family="$1"
+    local font_families=""
+
+    command -v fc-list >/dev/null 2>&1 || return 1
+
+    # Consume all fc-list output before searching it. This avoids SIGPIPE
+    # false negatives caused by `fc-list | grep -q` under `pipefail`.
+    font_families="$(fc-list : family 2>/dev/null)" || return 1
+
+    grep -F -i -m 1 -- "$expected_family" <<<"$font_families"
+}
+
+font_family_available() {
+    font_family_match "$1" >/dev/null
 }
 
 download_file() {

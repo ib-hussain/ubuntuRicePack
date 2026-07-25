@@ -66,61 +66,6 @@ enable_ubuntu_components() {
     done
 }
 
-remove_snap_stack() {
-    local snap_name=""
-    local -a installed_snaps=()
-    local snap_backup=""
-
-    [[ "$REMOVE_SNAP" == "1" ]] || {
-        log "Snap removal disabled by REMOVE_SNAP=$REMOVE_SNAP."
-        return 0
-    }
-
-    log "Removing the Snap stack as requested by the no-Snap policy."
-
-    if command -v snap >/dev/null 2>&1; then
-        mapfile -t installed_snaps < <(
-            snap list 2>/dev/null |
-                awk 'NR > 1 {print $1}'
-        )
-
-        # Two passes allow applications to be removed before bases that were
-        # initially reported as dependencies.
-        for _pass in 1 2; do
-            for snap_name in "${installed_snaps[@]}"; do
-                if snap list "$snap_name" >/dev/null 2>&1; then
-                    run_root snap remove --purge "$snap_name" >>"$LOG_FILE" 2>&1 ||
-                        warn "Could not remove Snap package yet: $snap_name"
-                fi
-            done
-        done
-    fi
-
-    # Ubuntu's firefox APT package is a Snap launcher. Purging both names keeps
-    # it from silently restoring snapd.
-    apt_purge firefox snapd >>"$LOG_FILE" 2>&1 ||
-        warn "snapd/firefox were absent or could not be fully purged."
-
-    if [[ -d "$TARGET_HOME/snap" ]]; then
-        snap_backup="$BACKUP_ROOT/home/$TARGET_USER/snap"
-        mkdir -p -- "$(dirname -- "$snap_backup")"
-        if [[ ! -e "$snap_backup" ]]; then
-            mv -- "$TARGET_HOME/snap" "$snap_backup"
-            log "Moved the former user Snap data to $snap_backup"
-        else
-            warn "Snap backup already exists; leaving $TARGET_HOME/snap untouched."
-        fi
-    fi
-
-    install_root_file /etc/apt/preferences.d/ubuntuRicePack-no-snap.pref 0644 <<'EOF_NO_SNAP'
-# Managed by ubuntuRicePack.
-# Prevent APT dependencies from silently reinstalling snapd.
-Package: snapd
-Pin: release a=*
-Pin-Priority: -10
-EOF_NO_SNAP
-}
-
 translate_package() {
     local package_name="$1"
 
@@ -829,7 +774,7 @@ main() {
 
     enable_ubuntu_components
     apt_update
-    remove_snap_stack
+    # remove_snap_stack
     apt_update
     install_repository_packages
 
