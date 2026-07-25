@@ -1,3 +1,4 @@
+#This should be the default file for UBUNTU, taken from /etc/default/grub
 # If you change this file or any /etc/default/grub.d/*.cfg file,
 # run 'update-grub' afterwards to update /boot/grub/grub.cfg.
 # For full documentation of the options in these files, see:
