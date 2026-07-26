@@ -9,7 +9,7 @@
   "cmake.options.statusBarVisibility": "visible",
   "explorer.confirmDelete": false,
   "makefile.configureOnOpen": true,
-  "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+  "C_Cpp.default.compilerPath": "/usr/bin/g++",
   "cmake.pinnedCommands": [
     "workbench.action.tasks.configureTaskRunner",
     "workbench.action.tasks.runTask"
@@ -66,30 +66,11 @@
   "pgsql.serverGroups": [
     {
       "name": "Servers",
-      "id": "3C7135C5-122B-458C-9D87-B8F25B06EA2F",
+      "id": "3C7135C5-122B-458C-9D87-B8F26706EA2F",
       "isDefault": true
     }
   ],
-  "pgsql.connections": [
-    {
-      "id": "167052E2-91BE-40A3-A528-B9A60166AA2C",
-      "groupId": "3C7135C5-122B-458C-9D87-B8F25B06EA2F",
-      "authenticationType": "SqlLogin",
-      "connectTimeout": 15,
-      "applicationName": "vscode-pgsql",
-      "clientEncoding": "utf8",
-      "sslmode": "require",
-      "savePassword": true,
-      "server": "aws-0-eu-west-3.pooler.supabase.com",
-      "user": "postgres.kumqhytmymzmbywlwepz",
-      "port": "6543",
-      "database": "postgres",
-      "password": "",
-      "profileName": "aws-0-eu-west-3.pooler.supabase.com, postgres (postgres.kumqhytmymzmbywlwepz)",
-      "sshPassword": "",
-      "expiresOn": 0
-    }
-  ],
+  "pgsql.connections": [],
   "diffEditor.codeLens": true,
   "pgsql.enableQueryHistoryCapture": false,
   "explorer.confirmPasteNative": false,
@@ -103,9 +84,6 @@
     "{hexdiff}:/**/*.*": "hexEditor.hexedit",
     "*.o": "hexEditor.hexedit"
   },
-  "security.allowedUNCHosts": [
-    "wsl.localhost"
-  ],
   "editor.multiCursorLimit": 100000,
   "files.autoSave": "afterDelay",
   "liveServer.settings.port": 0,
@@ -133,8 +111,8 @@
   "workbench.colorTheme": "Visual Studio 2017 Dark - C++",
   "python.terminal.useEnvFile": true,
   "workbench.editor.enablePreview": false,
-  "python.analysis.typeCheckingMode": "basic"
-    "files.watcherExclude": {
+  "python.analysis.typeCheckingMode": "basic",
+  "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
     "**/node_modules/**": true,

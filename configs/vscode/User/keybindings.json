@@ -6,14 +6,20 @@
         "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
     },
     {
-        "key": "ctrl+shift+`",
-        "command": "-workbench.action.terminal.new",
+        "key": "ctrl+shift+;",
+        "command": "workbench.action.terminal.new",
         "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
     },
     {
+        "key": "ctrl+shift+l",
+        "command": "workbench.action.terminal.new",
+        "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
+    },
+    // removals
+    {
         "key": "ctrl+shift+`",
-        "command": "breadcrumbs.focus",
-        "when": "breadcrumbsPossible && breadcrumbsVisible"
+        "command": "-workbench.action.terminal.new",
+        "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
     },
     {
         "key": "ctrl+shift+;",
@@ -21,23 +27,23 @@
         "when": "breadcrumbsPossible && breadcrumbsVisible"
     },
     {
-        "key": "ctrl+shift+;",
-        "command": "workbench.action.terminal.splitActiveTab",
-        "when": "terminalProcessSupported && terminalTabsFocus"
+        "key": "ctrl+shift+l",          
+        "command": "-editor.action.selectHighlights",
+        "when": "editorFocus" 
     },
     {
-        "key": "ctrl+shift+5",
-        "command": "-workbench.action.terminal.splitActiveTab",
-        "when": "terminalProcessSupported && terminalTabsFocus"
+        "key": "ctrl+shift+l",
+        "command": "-addCursorsAtSearchResults",
+        "when": "fileMatchOrMatchFocus && searchViewletVisible" 
     },
     {
-        "key": "ctrl+shift+;",
-        "command": "workbench.action.terminal.split",
-        "when": "terminalFocus && terminalProcessSupported || terminalFocus && terminalWebExtensionContributedProfile"
+        "key": "ctrl+shift+l",
+        "command": "-notebook.selectAllFindMatches",
+        "when": "config.notebook.multiCursor.enabled && notebookFindWidgetFocused || config.notebook.multiCursor.enabled && notebookCellEditorFocused && activeEditor == 'workbench.editor.notebook'" 
     },
     {
-        "key": "ctrl+shift+5",
-        "command": "-workbench.action.terminal.split",
-        "when": "terminalFocus && terminalProcessSupported || terminalFocus && terminalWebExtensionContributedProfile"
+        "key": "ctrl+shift+l",
+        "command": "-selectAllSearchEditorMatches",
+        "when": "inSearchEditor" 
     }
 ]
