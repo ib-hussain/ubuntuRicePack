@@ -8,27 +8,29 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=00-common.sh
 source "$SCRIPT_DIR/00-common.sh"
 
-STRICT_FINAL_VERIFY="${STRICT_FINAL_VERIFY:-0}"
+STRICT_FINAL_VERIFY="${STRICT_FINAL_VERIFY:-1}"
 FINAL_FAILURES=0
 FINAL_WARNINGS=0
 REPORT_FILE=""
 
 readonly -a REQUIRED_ENABLED_EXTENSIONS=(
-    "arch-dock-icon@ib-hussain"
-    "hidetopbar@mathieu.bidon.ca"
+    "rice-dock@ib-hussain"
+    "rice-top-bar@ib-hussain"
     "start-overlay-in-application-view@Hex_cz"
     "launch-new-instance@gnome-shell-extensions.gcampax.github.com"
     "places-menu@gnome-shell-extensions.gcampax.github.com"
     "system-monitor@gnome-shell-extensions.gcampax.github.com"
     "user-theme@gnome-shell-extensions.gcampax.github.com"
-    "ubuntu-dock@ubuntu.com"
     "ding@rastersoft.com"
     "ubuntu-appindicators@ubuntu.com"
     "web-search-provider@ubuntu.com"
 )
 
 readonly -a REQUIRED_DISABLED_EXTENSIONS=(
+    "arch-dock-icon@ib-hussain"
+    "hidetopbar@mathieu.bidon.ca"
     "dash-to-dock@micxgx.gmail.com"
+    "ubuntu-dock@ubuntu.com"
     "tiling-assistant@ubuntu.com"
     "snapd-prompting@canonical.com"
     "snapd-search-provider@canonical.com"
@@ -267,13 +269,15 @@ extension_present() {
 
     [[ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/$uuid/metadata.json" ]] ||
         [[ -f "/usr/share/gnome-shell/extensions/$uuid/metadata.json" ]] ||
-        gnome-extensions list 2>/dev/null | grep -Fqx "$uuid"
+        gnome-extensions list 2>/dev/null |
+            grep -Fx "$uuid" >/dev/null
 }
 
 extension_enabled() {
     local uuid="$1"
 
-    gnome-extensions list --enabled 2>/dev/null | grep -Fqx "$uuid" ||
+    gnome-extensions list --enabled 2>/dev/null |
+        grep -Fx "$uuid" >/dev/null ||
         gsettings get org.gnome.shell enabled-extensions 2>/dev/null |
             grep -Fq "'$uuid'"
 }
@@ -300,6 +304,150 @@ verify_extension() {
     fi
 }
 
+verify_extension_runtime() {
+    local uuid="$1"
+    local state=""
+    local error=""
+
+    state="$(
+        gnome-extensions info "$uuid" 2>/dev/null |
+            sed -n 's/^[[:space:]]*State:[[:space:]]*//p' |
+            head -n 1 || true
+    )"
+    error="$(
+        gnome-extensions info "$uuid" 2>/dev/null |
+            sed -n 's/^[[:space:]]*Error:[[:space:]]*//p' |
+            head -n 1 || true
+    )"
+
+    case "$state" in
+        ACTIVE)
+            report_line extension-runtime "$uuid" ACTIVE ACTIVE PASS
+            ;;
+        ERROR)
+            record_failure \
+                extension-runtime \
+                "$uuid" \
+                ACTIVE \
+                "ERROR: ${error:-unknown error}"
+            ;;
+        "")
+            # A user extension copied into the current session becomes visible
+            # to GNOME Shell only after logout/login.
+            record_warning \
+                extension-runtime \
+                "$uuid" \
+                "ACTIVE after login" \
+                "not loaded by current Shell process"
+            ;;
+        *)
+            record_warning \
+                extension-runtime \
+                "$uuid" \
+                "ACTIVE after login" \
+                "$state"
+            ;;
+    esac
+}
+
+verify_rice_extension_assets() {
+    local dock_dir="$TARGET_HOME/.local/share/gnome-shell/extensions/rice-dock@ib-hussain"
+    local top_bar_dir="$TARGET_HOME/.local/share/gnome-shell/extensions/rice-top-bar@ib-hussain"
+    local stale_logo=""
+    local -a logo_files=()
+
+    if [[ -f "$dock_dir/media/logo.png" ]]; then
+        report_line \
+            extension-asset \
+            "Rice Dock logo" \
+            "$dock_dir/media/logo.png" \
+            present \
+            PASS
+    else
+        record_failure \
+            extension-asset \
+            "Rice Dock logo" \
+            "$dock_dir/media/logo.png" \
+            missing
+    fi
+
+    if [[ -d "$dock_dir/media" ]]; then
+        mapfile -t logo_files < <(
+            find "$dock_dir/media" \
+                -maxdepth 1 \
+                -type f \
+                -name 'logo.*' \
+                -printf '%f\n' 2>/dev/null |
+                sort
+        )
+    fi
+    if [[ "${#logo_files[@]}" -eq 1 &&
+        "${logo_files[0]}" == "logo.png" ]]
+    then
+        report_line \
+            extension-asset \
+            "single-source Show Applications logo" \
+            "logo.png only" \
+            "logo.png only" \
+            PASS
+    else
+        record_failure \
+            extension-asset \
+            "single-source Show Applications logo" \
+            "logo.png only" \
+            "${logo_files[*]:-none}"
+    fi
+
+    stale_logo="$(
+        find "$dock_dir" -type f -name 'arch-logo.*' -print -quit 2>/dev/null ||
+            true
+    )"
+    if [[ -z "$stale_logo" ]]; then
+        report_line \
+            extension-asset \
+            "retired duplicate Arch logo" \
+            absent \
+            absent \
+            PASS
+    else
+        record_failure \
+            extension-asset \
+            "retired duplicate Arch logo" \
+            absent \
+            "$stale_logo"
+    fi
+
+    if [[ -s "$dock_dir/stylesheet.css" ]]; then
+        report_line \
+            extension-asset \
+            "Rice Dock compiled stylesheet" \
+            present \
+            present \
+            PASS
+    else
+        record_failure \
+            extension-asset \
+            "Rice Dock compiled stylesheet" \
+            present \
+            missing
+    fi
+
+    if [[ -f "$top_bar_dir/transparentPanel.js" ]]; then
+        report_line \
+            extension-asset \
+            "Rice Top Bar transparency controller" \
+            present \
+            present \
+            PASS
+    else
+        record_failure \
+            extension-asset \
+            "Rice Top Bar transparency controller" \
+            present \
+            missing
+    fi
+}
+
 verify_gsettings() {
     local schema="$1"
     local key="$2"
@@ -320,6 +468,26 @@ verify_gsettings() {
         report_line gsettings "$schema $key" "$expected" "$actual" PASS
     else
         record_failure gsettings "$schema $key" "$expected" "$actual"
+    fi
+}
+
+verify_relocatable_gsettings() {
+    local schema="$1"
+    local path="$2"
+    local key="$3"
+    local expected="$4"
+    local target="$schema:$path"
+    local actual=""
+
+    actual="$(gsettings get "$target" "$key" 2>/dev/null || true)"
+    if [[ "$actual" == "$expected" ]]; then
+        report_line gsettings "$target $key" "$expected" "$actual" PASS
+    else
+        record_failure \
+            gsettings \
+            "$target $key" \
+            "$expected" \
+            "${actual:-schema/key unavailable}"
     fi
 }
 
@@ -469,6 +637,9 @@ write_final_report() {
     for uuid in "${REQUIRED_DISABLED_EXTENSIONS[@]}"; do
         verify_extension "$uuid" disabled
     done
+    verify_extension_runtime "rice-dock@ib-hussain"
+    verify_extension_runtime "rice-top-bar@ib-hussain"
+    verify_rice_extension_assets
 
     verify_gsettings \
         org.gnome.desktop.interface gtk-theme "'MacTahoe-Dark-blue'"
@@ -486,6 +657,27 @@ write_final_report() {
         org.gnome.shell.extensions.dash-to-dock dock-fixed "false"
     verify_gsettings \
         org.gnome.shell.extensions.dash-to-dock always-center-icons "true"
+
+    verify_relocatable_gsettings \
+        org.gnome.settings-daemon.plugins.media-keys.custom-keybinding \
+        /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/files/ \
+        binding \
+        "'<Super>e'"
+    verify_relocatable_gsettings \
+        org.gnome.settings-daemon.plugins.media-keys.custom-keybinding \
+        /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/files/ \
+        command \
+        "'nautilus'"
+    verify_relocatable_gsettings \
+        org.gnome.settings-daemon.plugins.media-keys.custom-keybinding \
+        /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/settings/ \
+        binding \
+        "'<Super>i'"
+    verify_relocatable_gsettings \
+        org.gnome.settings-daemon.plugins.media-keys.custom-keybinding \
+        /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/settings/ \
+        command \
+        "'gnome-control-center'"
 
     if schema_key_exists org.gnome.shell.extensions.ding show-trash; then
         verify_gsettings \

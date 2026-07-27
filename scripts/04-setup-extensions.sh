@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Install and configure Ibrahim's GNOME 50 extension inventory on Ubuntu.
+# Install and configure Ibrahim's GNOME extension inventory on Ubuntu.
 #
 # Repository policy:
-#   - Keep only arch-dock-icon@ib-hussain in configs/extensions.
+#   - Keep Rice Dock and Rice Top Bar in the repository because both contain
+#     reviewed rice-specific code.
 #   - Install official GNOME extensions from Ubuntu packages.
-#   - Download the two unmodified third-party extensions from the reviewed
+#   - Download the remaining unmodified third-party extension from the reviewed
 #     GNOME Extensions service.
-#   - Use Ubuntu Dock instead of installing upstream Dash-to-Dock.
+#   - Disable Ubuntu Dock, upstream Dash-to-Dock, the retired Arch icon patch,
+#     and upstream Hide Top Bar so only one dock and one top-bar controller run.
 
 set -Eeuo pipefail
 IFS=$'\n\t'
@@ -19,13 +21,20 @@ readonly EXPECTED_GNOME_MAJOR="${RICE_GNOME_MAJOR:-50}"
 readonly EXTENSION_SOURCE="$REPO_ROOT/configs/extensions"
 readonly EXTENSION_LIST="$EXTENSION_SOURCE/extension-list.txt"
 readonly EXTENSION_DEST="$TARGET_HOME/.local/share/gnome-shell/extensions"
-readonly CUSTOM_UUID="arch-dock-icon@ib-hussain"
+readonly RICE_DOCK_UUID="rice-dock@ib-hussain"
+readonly RICE_TOP_BAR_UUID="rice-top-bar@ib-hussain"
+readonly RETIRED_ICON_UUID="arch-dock-icon@ib-hussain"
+readonly HIDE_TOP_BAR_UUID="hidetopbar@mathieu.bidon.ca"
 readonly DASH_TO_DOCK_UUID="dash-to-dock@micxgx.gmail.com"
 readonly UBUNTU_DOCK_UUID="ubuntu-dock@ubuntu.com"
 
 declare -A EGO_URLS=(
-    ["hidetopbar@mathieu.bidon.ca"]="https://extensions.gnome.org/download-extension/hidetopbar@mathieu.bidon.ca.shell-extension.zip"
     ["start-overlay-in-application-view@Hex_cz"]="https://extensions.gnome.org/download-extension/start-overlay-in-application-view@Hex_cz.shell-extension.zip"
+)
+
+readonly -a CUSTOM_UUIDS=(
+    "$RICE_DOCK_UUID"
+    "$RICE_TOP_BAR_UUID"
 )
 
 readonly -a OFFICIAL_GNOME_UUIDS=(
@@ -45,10 +54,12 @@ readonly -a OFFICIAL_GNOME_UUIDS=(
     "workspace-indicator@gnome-shell-extensions.gcampax.github.com"
 )
 
-# These seven UUIDs were enabled in the exported Arch setup.
+# These seven effective extensions reproduce the enabled Arch snapshot. Rice
+# Dock replaces both Dash-to-Dock and the old icon patch; Rice Top Bar replaces
+# the upstream Hide Top Bar build.
 readonly -a ACTIVE_SNAPSHOT_UUIDS=(
-    "$CUSTOM_UUID"
-    "hidetopbar@mathieu.bidon.ca"
+    "$RICE_DOCK_UUID"
+    "$RICE_TOP_BAR_UUID"
     "start-overlay-in-application-view@Hex_cz"
     "launch-new-instance@gnome-shell-extensions.gcampax.github.com"
     "places-menu@gnome-shell-extensions.gcampax.github.com"
@@ -72,14 +83,16 @@ readonly -a DISABLED_SNAPSHOT_UUIDS=(
 )
 
 readonly -a ACTIVE_UBUNTU_UUIDS=(
-    "$UBUNTU_DOCK_UUID"
     "ding@rastersoft.com"
     "ubuntu-appindicators@ubuntu.com"
     "web-search-provider@ubuntu.com"
 )
 
 readonly -a DISABLED_UBUNTU_UUIDS=(
+    "$RETIRED_ICON_UUID"
+    "$HIDE_TOP_BAR_UUID"
     "$DASH_TO_DOCK_UUID"
+    "$UBUNTU_DOCK_UUID"
     "tiling-assistant@ubuntu.com"
     "snapd-prompting@canonical.com"
     "snapd-search-provider@canonical.com"
@@ -152,15 +165,26 @@ extension_present() {
 
     [[ -f "$EXTENSION_DEST/$uuid/metadata.json" ]] ||
         [[ -f "/usr/share/gnome-shell/extensions/$uuid/metadata.json" ]] ||
-        gnome-extensions list 2>/dev/null | grep -Fxq "$uuid"
+        gnome-extensions list 2>/dev/null |
+            grep -Fx "$uuid" >/dev/null
 }
 
 extension_enabled() {
     local uuid="$1"
 
-    gnome-extensions list --enabled 2>/dev/null | grep -Fxq "$uuid" ||
+    gnome-extensions list --enabled 2>/dev/null |
+        grep -Fx "$uuid" >/dev/null ||
         gsettings get org.gnome.shell enabled-extensions 2>/dev/null |
             grep -Fq "'$uuid'"
+}
+
+extension_info_field() {
+    local uuid="$1"
+    local field="$2"
+
+    gnome-extensions info "$uuid" 2>/dev/null |
+        sed -n "s/^[[:space:]]*$field:[[:space:]]*//p" |
+        head -n 1
 }
 
 install_required_packages() {
@@ -202,8 +226,9 @@ load_and_validate_manifest() {
     [[ -f "$EXTENSION_LIST" ]] ||
         fail "Missing extension inventory: $EXTENSION_LIST"
 
-    known["$CUSTOM_UUID"]=1
-    known["$DASH_TO_DOCK_UUID"]=1
+    for uuid in "${CUSTOM_UUIDS[@]}"; do
+        known["$uuid"]=1
+    done
     for uuid in "${!EGO_URLS[@]}"; do
         known["$uuid"]=1
     done
@@ -227,15 +252,15 @@ load_and_validate_manifest() {
         MANIFEST_UUIDS+=("$uuid")
     done <"$EXTENSION_LIST"
 
-    [[ "${#MANIFEST_UUIDS[@]}" -eq 18 ]] ||
-        fail "Expected 18 exported extension UUIDs; found ${#MANIFEST_UUIDS[@]}."
+    [[ "${#MANIFEST_UUIDS[@]}" -eq 17 ]] ||
+        fail "Expected 17 effective extension UUIDs; found ${#MANIFEST_UUIDS[@]}."
 
     for uuid in "${!known[@]}"; do
         [[ -n "${seen[$uuid]:-}" ]] ||
             fail "The exported extension inventory is missing: $uuid"
     done
 
-    log "Validated the complete 18-entry extension inventory."
+    log "Validated the complete 17-entry effective extension inventory."
 }
 
 validate_extension_metadata() {
@@ -412,18 +437,22 @@ install_ego_extension() {
     fi
 }
 
-install_custom_extension() {
+install_custom_extensions() {
     local shell_major="$1"
-    local source_dir="$EXTENSION_SOURCE/$CUSTOM_UUID"
+    local uuid=""
+    local source_dir=""
 
-    [[ -d "$source_dir" ]] ||
-        fail "The custom extension must remain in the repository: $source_dir"
+    for uuid in "${CUSTOM_UUIDS[@]}"; do
+        source_dir="$EXTENSION_SOURCE/$uuid"
+        [[ -d "$source_dir" ]] ||
+            fail "The custom extension must remain in the repository: $source_dir"
 
-    install_extension_tree \
-        "$source_dir" \
-        "$CUSTOM_UUID" \
-        "ubuntuRicePack repository" \
-        "$shell_major"
+        install_extension_tree \
+            "$source_dir" \
+            "$uuid" \
+            "ubuntuRicePack repository" \
+            "$shell_major"
+    done
 }
 
 set_extension_state_fallback() {
@@ -516,9 +545,9 @@ verify_official_extensions() {
     done
 
     if extension_present "$UBUNTU_DOCK_UUID"; then
-        log "Ubuntu Dock is available and will replace upstream Dash-to-Dock."
+        log "Ubuntu Dock is available but will be disabled in favor of Rice Dock."
     else
-        INSTALL_FAILURES+=("$UBUNTU_DOCK_UUID: missing from Ubuntu's extension package")
+        log "Ubuntu Dock is not installed; Rice Dock needs no system-dock fallback."
     fi
 }
 
@@ -547,6 +576,8 @@ write_extension_report() {
     local all_file="$report_dir/extensions-$RUN_ID-all.txt"
     local enabled_file="$report_dir/extensions-$RUN_ID-enabled.txt"
     local shell_state_file="$report_dir/extensions-$RUN_ID-shell-state.txt"
+    local info_file="$report_dir/extensions-$RUN_ID-info.txt"
+    local journal_file="$report_dir/extensions-$RUN_ID-journal.txt"
     local uuid=""
     local effective_uuid=""
     local installed="no"
@@ -556,9 +587,12 @@ write_extension_report() {
     local metadata=""
     local version="unavailable"
     local location="not installed"
+    local runtime_state="not-loaded"
+    local runtime_error=""
 
     mkdir -p -- "$report_dir"
-    printf 'inventory_uuid\teffective_uuid\tsource\tlocation\tversion\tinstalled\tdesired\tenabled\n' \
+    : >"$info_file"
+    printf 'inventory_uuid\teffective_uuid\tsource\tlocation\tversion\tinstalled\tdesired\tenabled\truntime_state\truntime_error\n' \
         >"$report_file"
 
     for uuid in "${MANIFEST_UUIDS[@]}"; do
@@ -566,18 +600,13 @@ write_extension_report() {
         source="Ubuntu package"
         desired="disabled"
 
-        if [[ "$uuid" == "$CUSTOM_UUID" ]]; then
+        if array_contains "$uuid" "${CUSTOM_UUIDS[@]}"; then
             source="repository"
         elif [[ -n "${EGO_URLS[$uuid]:-}" ]]; then
             source="extensions.gnome.org"
-        elif [[ "$uuid" == "$DASH_TO_DOCK_UUID" ]]; then
-            effective_uuid="$UBUNTU_DOCK_UUID"
-            source="Ubuntu Dock substitution"
         fi
 
-        if array_contains "$uuid" "${ACTIVE_SNAPSHOT_UUIDS[@]}" ||
-            [[ "$uuid" == "$DASH_TO_DOCK_UUID" ]]
-        then
+        if array_contains "$uuid" "${ACTIVE_SNAPSHOT_UUIDS[@]}"; then
             desired="enabled"
         fi
 
@@ -586,8 +615,17 @@ write_extension_report() {
         metadata=""
         version="unavailable"
         location="not installed"
+        runtime_state="not-loaded"
+        runtime_error=""
         extension_present "$effective_uuid" && installed="yes"
         extension_enabled "$effective_uuid" && enabled="yes"
+        runtime_state="$(
+            extension_info_field "$effective_uuid" State || true
+        )"
+        runtime_state="${runtime_state:-not-loaded}"
+        runtime_error="$(
+            extension_info_field "$effective_uuid" Error || true
+        )"
 
         if [[ -f "$EXTENSION_DEST/$effective_uuid/metadata.json" ]]; then
             metadata="$EXTENSION_DEST/$effective_uuid/metadata.json"
@@ -614,7 +652,7 @@ PY_REPORT_VERSION
             )"
         fi
 
-        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$uuid" \
             "$effective_uuid" \
             "$source" \
@@ -622,16 +660,36 @@ PY_REPORT_VERSION
             "$version" \
             "$installed" \
             "$desired" \
-            "$enabled" >>"$report_file"
+            "$enabled" \
+            "$runtime_state" \
+            "$runtime_error" >>"$report_file"
+
+        {
+            printf '===== %s =====\n' "$effective_uuid"
+            gnome-extensions info "$effective_uuid" 2>&1 || true
+            printf '\n'
+        } >>"$info_file"
+
+        if array_contains "$uuid" "${CUSTOM_UUIDS[@]}" &&
+            [[ "$runtime_state" == "ERROR" ]]
+        then
+            INSTALL_FAILURES+=(
+                "$uuid: GNOME Shell reports ERROR: ${runtime_error:-unknown error}"
+            )
+        fi
     done
 
-    # Ubuntu-specific extensions are not part of the 18-entry Arch export, but
+    # Ubuntu-specific extensions are not part of the effective Arch export, but
     # they still need an explicit state audit on an Ubuntu installation.
     for uuid in \
         "ding@rastersoft.com" \
         "tiling-assistant@ubuntu.com" \
         "ubuntu-appindicators@ubuntu.com" \
         "web-search-provider@ubuntu.com" \
+        "$RETIRED_ICON_UUID" \
+        "$HIDE_TOP_BAR_UUID" \
+        "$DASH_TO_DOCK_UUID" \
+        "$UBUNTU_DOCK_UUID" \
         "snapd-prompting@canonical.com" \
         "snapd-search-provider@canonical.com"
     do
@@ -641,12 +699,17 @@ PY_REPORT_VERSION
         metadata=""
         version="unavailable"
         location="not installed"
+        runtime_state="not-loaded"
+        runtime_error=""
 
         if array_contains "$uuid" "${ACTIVE_UBUNTU_UUIDS[@]}"; then
             desired="enabled"
         fi
         extension_present "$uuid" && installed="yes"
         extension_enabled "$uuid" && enabled="yes"
+        runtime_state="$(extension_info_field "$uuid" State || true)"
+        runtime_state="${runtime_state:-not-loaded}"
+        runtime_error="$(extension_info_field "$uuid" Error || true)"
 
         if [[ -f "$EXTENSION_DEST/$uuid/metadata.json" ]]; then
             metadata="$EXTENSION_DEST/$uuid/metadata.json"
@@ -673,7 +736,7 @@ PY_UBUNTU_VERSION
             )"
         fi
 
-        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "ubuntu-native:$uuid" \
             "$uuid" \
             "Ubuntu package" \
@@ -681,7 +744,9 @@ PY_UBUNTU_VERSION
             "$version" \
             "$installed" \
             "$desired" \
-            "$enabled" >>"$report_file"
+            "$enabled" \
+            "$runtime_state" \
+            "$runtime_error" >>"$report_file"
     done
 
     gnome-extensions list 2>/dev/null | sort >"$all_file"
@@ -695,7 +760,18 @@ PY_UBUNTU_VERSION
         gsettings get org.gnome.shell disabled-extensions 2>/dev/null || true
     } >"$shell_state_file"
 
+    if command -v journalctl >/dev/null 2>&1; then
+        journalctl --user -b -o short-iso --no-pager 2>/dev/null |
+            grep -E \
+                '\[(rice-dock|rice-top-bar)@ib-hussain\]|GNOME Shell.*extension' \
+                >"$journal_file" || :
+    else
+        printf 'journalctl is unavailable\n' >"$journal_file"
+    fi
+
     log "Extension verification report: $report_file"
+    log "Detailed extension metadata/state: $info_file"
+    log "Rice extension journal excerpt: $journal_file"
     log "Complete extension inventory: $all_file"
     log "Enabled extension inventory: $enabled_file"
     log "GNOME Shell extension state snapshot: $shell_state_file"
@@ -708,7 +784,8 @@ main() {
     require_ubuntu
     require_command gnome-extensions
     require_command gsettings
-    assert_repo_path "configs/extensions/$CUSTOM_UUID"
+    assert_repo_path "configs/extensions/$RICE_DOCK_UUID"
+    assert_repo_path "configs/extensions/$RICE_TOP_BAR_UUID"
 
     shell_major="$(detect_gnome_major)"
     if [[ "$shell_major" != "$EXPECTED_GNOME_MAJOR" &&
@@ -724,8 +801,7 @@ main() {
         install_required_packages
         mkdir -p -- "$EXTENSION_DEST"
 
-        install_custom_extension "$shell_major"
-        install_ego_extension "hidetopbar@mathieu.bidon.ca" "$shell_major"
+        install_custom_extensions "$shell_major"
         install_ego_extension \
             "start-overlay-in-application-view@Hex_cz" \
             "$shell_major"

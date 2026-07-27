@@ -364,7 +364,7 @@ schema_exists() {
     local schema="$1"
     command -v gsettings >/dev/null 2>&1 &&
         gsettings list-schemas 2>/dev/null |
-            grep -Fxq "$schema"
+            grep -Fx "$schema" >/dev/null
 }
 
 schema_key_exists() {
@@ -373,7 +373,7 @@ schema_key_exists() {
 
     schema_exists "$schema" || return 1
     gsettings list-keys "$schema" 2>/dev/null |
-        grep -Fxq "$key"
+        grep -Fx "$key" >/dev/null
 }
 
 gs_set() {

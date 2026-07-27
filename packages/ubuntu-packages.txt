@@ -1,6 +1,7 @@
-# ubuntuRicePack WSL packages
-# Target: Ubuntu 26.04 LTS (Resolute) under WSL 2
-# Translated from the Arch WSL pacman inventory on 2026-07-24.
+# ubuntuRicePack desktop packages
+# Target: Ubuntu 26.04 LTS (Resolute) with GNOME
+# This list contains the shared CLI inventory plus desktop packages explicitly
+# verified by the final UbuntuRicePack audit.
 #
 # Every uncommented line is an APT package verified in the official Ubuntu
 # Resolute package index. The installer should ignore blank lines and lines
@@ -115,6 +116,27 @@ imagemagick
 fontconfig
 sl
 cmatrix
+
+# ---------------------------------------------------------------------------
+# Desktop integration and optional VLC feature modules
+gnome-browser-connector
+gnome-screenshot
+sxhkd
+vlc
+vlc-l10n
+vlc-plugin-access-extra
+vlc-plugin-base
+vlc-plugin-fluidsynth
+vlc-plugin-jack
+vlc-plugin-notify
+vlc-plugin-pipewire
+vlc-plugin-qt
+vlc-plugin-samba
+vlc-plugin-skins2
+vlc-plugin-svg
+vlc-plugin-video-output
+vlc-plugin-video-splitter
+vlc-plugin-visualization
 
 # ---------------------------------------------------------------------------
 # Deliberately not installable from this APT-only list

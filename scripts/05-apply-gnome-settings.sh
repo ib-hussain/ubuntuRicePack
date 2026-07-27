@@ -16,20 +16,21 @@ readonly THEME_NAME="MacTahoe-Dark-blue"
 readonly ICON_THEME_NAME="Papirus-Dark"
 
 readonly -a REQUIRED_ENABLED_EXTENSIONS=(
-    "arch-dock-icon@ib-hussain"
-    "hidetopbar@mathieu.bidon.ca"
+    "rice-dock@ib-hussain"
+    "rice-top-bar@ib-hussain"
     "start-overlay-in-application-view@Hex_cz"
     "launch-new-instance@gnome-shell-extensions.gcampax.github.com"
     "places-menu@gnome-shell-extensions.gcampax.github.com"
     "system-monitor@gnome-shell-extensions.gcampax.github.com"
     "user-theme@gnome-shell-extensions.gcampax.github.com"
-    "ubuntu-dock@ubuntu.com"
     "ding@rastersoft.com"
     "ubuntu-appindicators@ubuntu.com"
     "web-search-provider@ubuntu.com"
 )
 
 readonly -a REQUIRED_DISABLED_EXTENSIONS=(
+    "arch-dock-icon@ib-hussain"
+    "hidetopbar@mathieu.bidon.ca"
     "apps-menu@gnome-shell-extensions.gcampax.github.com"
     "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
     "drive-menu@gnome-shell-extensions.gcampax.github.com"
@@ -41,6 +42,7 @@ readonly -a REQUIRED_DISABLED_EXTENSIONS=(
     "windowsNavigator@gnome-shell-extensions.gcampax.github.com"
     "workspace-indicator@gnome-shell-extensions.gcampax.github.com"
     "dash-to-dock@micxgx.gmail.com"
+    "ubuntu-dock@ubuntu.com"
     "tiling-assistant@ubuntu.com"
     "snapd-prompting@canonical.com"
     "snapd-search-provider@canonical.com"
@@ -55,13 +57,15 @@ extension_present() {
 
     [[ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/$uuid/metadata.json" ]] ||
         [[ -f "/usr/share/gnome-shell/extensions/$uuid/metadata.json" ]] ||
-        gnome-extensions list 2>/dev/null | grep -Fxq "$uuid"
+        gnome-extensions list 2>/dev/null |
+            grep -Fx "$uuid" >/dev/null
 }
 
 extension_enabled() {
     local uuid="$1"
 
-    gnome-extensions list --enabled 2>/dev/null | grep -Fxq "$uuid" ||
+    gnome-extensions list --enabled 2>/dev/null |
+        grep -Fx "$uuid" >/dev/null ||
         gsettings get org.gnome.shell enabled-extensions 2>/dev/null |
             grep -Fq "'$uuid'"
 }

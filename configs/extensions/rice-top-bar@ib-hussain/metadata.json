@@ -1,0 +1,11 @@
+{
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "uuid": "rice-top-bar@ib-hussain",
+  "name": "Rice Top Bar",
+  "settings-schema": "org.gnome.shell.extensions.hidetopbar",
+  "description": "Ibrahim's transparent GNOME top bar with Hide Top Bar intellihide behavior.",
+  "url": "https://github.com/ib-hussain/ubuntuRicePack",
+  "gettext-domain": "hidetopbar@mathieu.bidon.ca",
+  "version": 1,
+  "version-name": "1.0.0"
+}

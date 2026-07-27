@@ -190,7 +190,9 @@ restore_desktop_configuration() {
         warn "No account face image exists in configs/.face or assets/ib.png."
     fi
 
-    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    if command -v gtk-update-icon-cache >/dev/null 2>&1 &&
+        [[ -d "$TARGET_HOME/.local/share/icons" ]]
+    then
         while IFS= read -r -d '' destination; do
             gtk-update-icon-cache -q -f "$destination" >/dev/null 2>&1 || true
         done < <(

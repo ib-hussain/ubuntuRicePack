@@ -22,6 +22,8 @@ PYTHON_VERSION="${RICE_PYTHON_VERSION:-3.12.7}"
 PASSWORDLESS_SUDO="${RICE_PASSWORDLESS_SUDO:-1}"
 CONFIGURE_HOSTNAME="${RICE_CONFIGURE_HOSTNAME:-1}"
 INSTALL_PYENV="${RICE_INSTALL_PYENV:-1}"
+SET_SHORT_PASSWORD="${RICE_SET_SHORT_PASSWORD:-${RICE_ALLOW_SHORT_PASSWORDS:-0}}"
+REPAIR_PASSWORD_STACK="${RICE_REPAIR_PASSWORD_STACK:-0}"
 SKIP_PACKAGES=0
 SKIP_VSCODE=0
 SKIP_NERD_FONTS=0
@@ -49,6 +51,11 @@ System options:
   --locale LOCALE            Set locale (default: en_US.UTF-8)
   --python-version VERSION   pyenv Python version (default: 3.12.7)
   --keep-sudo-password       Do not create passwordless sudo configuration
+  --set-short-password       At the end, run the safe privileged interactive
+                             password workflow (four characters are allowed)
+  --allow-short-passwords    Backward-compatible alias for the option above
+  --repair-password-stack    Back up and regenerate Ubuntu's packaged PAM
+                             stack, then run the password workflow
   --skip-python              Do not install/build pyenv Python
   --skip-packages            Skip apt and external package installation
   --skip-vscode              Skip restoration of VS Code data
@@ -95,6 +102,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         --keep-sudo-password)
             PASSWORDLESS_SUDO=0
+            shift
+            ;;
+        --set-short-password | --allow-short-passwords)
+            SET_SHORT_PASSWORD=1
+            shift
+            ;;
+        --repair-password-stack)
+            REPAIR_PASSWORD_STACK=1
+            SET_SHORT_PASSWORD=1
             shift
             ;;
         --skip-python)
@@ -323,6 +339,14 @@ else
     fi
 fi
 
+if [[ "$SET_SHORT_PASSWORD" == "1" ]]; then
+    password_arguments=(--user "$USER")
+    if [[ "$REPAIR_PASSWORD_STACK" == "1" ]]; then
+        password_arguments+=(--repair-pam)
+    fi
+    run_step 09-set-local-password.sh "${password_arguments[@]}"
+fi
+
 log "============================================================"
 log "UbuntuRicePack installation completed in $MODE mode."
 log "Log file: $LOG_FILE"
@@ -332,4 +356,8 @@ if [[ "$MODE" == "desktop" ]]; then
 fi
 log "Local AI was not installed. To add it independently, run:"
 log "  bash scripts/10-setup-local-ai-ollama-openwebui.sh"
+log "To diagnose or set a short local password independently, run:"
+log "  bash scripts/09-set-local-password.sh"
+log "For duplicate current-password prompts/token errors, run:"
+log "  bash scripts/09-set-local-password.sh --repair-pam"
 log "============================================================"

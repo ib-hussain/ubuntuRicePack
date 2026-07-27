@@ -211,7 +211,8 @@ schema_has_key() {
     local schema="$1"
     local key="$2"
 
-    gsettings list-keys "$schema" 2>/dev/null | grep -Fqx "$key"
+    gsettings list-keys "$schema" 2>/dev/null |
+        grep -Fx "$key" >/dev/null
 }
 
 relocatable_schema_has_key() {
@@ -219,7 +220,8 @@ relocatable_schema_has_key() {
     local path="$2"
     local key="$3"
 
-    gsettings list-keys "$schema:$path" 2>/dev/null | grep -Fqx "$key"
+    gsettings list-keys "$schema:$path" 2>/dev/null |
+        grep -Fx "$key" >/dev/null
 }
 
 set_fixed() {
@@ -385,7 +387,9 @@ set_extension_state() {
         return 0
     }
 
-    if ! gnome-extensions list 2>/dev/null | grep -Fqx "$uuid"; then
+    if ! gnome-extensions list 2>/dev/null |
+        grep -Fx "$uuid" >/dev/null
+    then
         if [[ "$desired" == "enable" ]]; then
             warn "Extension is not installed; cannot enable: $uuid"
         fi
@@ -394,14 +398,16 @@ set_extension_state() {
     fi
 
     if [[ "$desired" == "enable" ]] &&
-        gnome-extensions list --enabled 2>/dev/null | grep -Fqx "$uuid"
+        gnome-extensions list --enabled 2>/dev/null |
+            grep -Fx "$uuid" >/dev/null
     then
         UNCHANGED=$((UNCHANGED + 1))
         return 0
     fi
 
     if [[ "$desired" == "disable" ]] &&
-        ! gnome-extensions list --enabled 2>/dev/null | grep -Fqx "$uuid"
+        ! gnome-extensions list --enabled 2>/dev/null |
+            grep -Fx "$uuid" >/dev/null
     then
         UNCHANGED=$((UNCHANGED + 1))
         return 0
@@ -1707,8 +1713,8 @@ apply_extension_states() {
     log "Applying the enabled/disabled extension set."
 
     local -a active_common=(
-        arch-dock-icon@ib-hussain
-        hidetopbar@mathieu.bidon.ca
+        rice-dock@ib-hussain
+        rice-top-bar@ib-hussain
         start-overlay-in-application-view@Hex_cz
         launch-new-instance@gnome-shell-extensions.gcampax.github.com
         places-menu@gnome-shell-extensions.gcampax.github.com
@@ -1716,6 +1722,8 @@ apply_extension_states() {
         user-theme@gnome-shell-extensions.gcampax.github.com
     )
     local -a disabled_snapshot=(
+        arch-dock-icon@ib-hussain
+        hidetopbar@mathieu.bidon.ca
         apps-menu@gnome-shell-extensions.gcampax.github.com
         auto-move-windows@gnome-shell-extensions.gcampax.github.com
         drive-menu@gnome-shell-extensions.gcampax.github.com
@@ -1738,9 +1746,10 @@ apply_extension_states() {
     done
 
     if [[ "$TARGET_PLATFORM" == "ubuntu" ]]; then
-        # Ubuntu Dock replaces upstream Dash-to-Dock while sharing its schema.
+        # Rice Dock is the one cross-distribution dock. Both system/upstream
+        # docks share its schema but must not run alongside it.
         set_extension_state dash-to-dock@micxgx.gmail.com disable
-        set_extension_state ubuntu-dock@ubuntu.com enable
+        set_extension_state ubuntu-dock@ubuntu.com disable
         set_extension_state ding@rastersoft.com enable
         # Arch uses Mutter's edge tiling and Super+Left/Right directly.
         # Ubuntu's Tiling Assistant overrides those exact settings.
@@ -1752,7 +1761,8 @@ apply_extension_states() {
         set_extension_state snapd-prompting@canonical.com disable
         set_extension_state snapd-search-provider@canonical.com disable
     else
-        set_extension_state dash-to-dock@micxgx.gmail.com enable
+        set_extension_state dash-to-dock@micxgx.gmail.com disable
+        set_extension_state ubuntu-dock@ubuntu.com disable
     fi
 }
 

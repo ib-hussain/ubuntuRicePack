@@ -21,11 +21,15 @@ WALLPAPER_REPO_URL="${RICE_WALLPAPER_REPO_URL:-https://github.com/ib-hussain/arc
 WALLPAPER_REF="${RICE_WALLPAPER_REF:-main}"
 WALLPAPER_REPO_PATH="${RICE_WALLPAPER_REPO_PATH:-assets/wallpapers}"
 WALLPAPER_INTERVAL="${RICE_WALLPAPER_INTERVAL:-5}"
+REFRESH_WALLPAPERS="${RICE_REFRESH_WALLPAPERS:-0}"
 WALLPAPER_DEST="$HOME/.local/share/backgrounds/rice/wallpapers"
+WALLPAPER_MANIFEST="$HOME/.local/share/backgrounds/rice/source.tsv"
 FETCH_ROOT=""
 
 [[ "$WALLPAPER_INTERVAL" =~ ^[1-9][0-9]*$ ]] ||
     fail "RICE_WALLPAPER_INTERVAL must be a positive integer."
+[[ "$REFRESH_WALLPAPERS" == "0" || "$REFRESH_WALLPAPERS" == "1" ]] ||
+    fail "RICE_REFRESH_WALLPAPERS must be either 0 or 1."
 [[ "$WALLPAPER_REPO_PATH" != /* &&
     "$WALLPAPER_REPO_PATH" != *".."* &&
     "$WALLPAPER_REPO_PATH" != -* ]] ||
@@ -39,6 +43,44 @@ cleanup_fetch() {
     fi
 }
 trap cleanup_fetch EXIT
+
+wallpaper_images_exist() {
+    local image=""
+
+    [[ -d "$WALLPAPER_DEST" ]] || return 1
+    while IFS= read -r -d '' image; do
+        return 0
+    done < <(
+        find "$WALLPAPER_DEST" -type f \
+            \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+                -o -iname '*.webp' \) \
+            -print0 2>/dev/null
+    )
+
+    return 1
+}
+
+wallpaper_source_matches() {
+    local expected=""
+
+    [[ -f "$WALLPAPER_MANIFEST" ]] || return 1
+    expected="$(
+        printf '%s\t%s\t%s\n' \
+            "$WALLPAPER_REPO_URL" \
+            "$WALLPAPER_REF" \
+            "$WALLPAPER_REPO_PATH"
+    )"
+    [[ "$(<"$WALLPAPER_MANIFEST")" == "$expected" ]]
+}
+
+write_wallpaper_manifest() {
+    mkdir -p "$(dirname "$WALLPAPER_MANIFEST")"
+    printf '%s\t%s\t%s\n' \
+        "$WALLPAPER_REPO_URL" \
+        "$WALLPAPER_REF" \
+        "$WALLPAPER_REPO_PATH" \
+        >"$WALLPAPER_MANIFEST"
+}
 
 install_account_picture() {
     local source_image=""
@@ -125,6 +167,24 @@ GRUB_CONFIG
 fetch_wallpapers() {
     local checkout_dir=""
 
+    if [[ "$REFRESH_WALLPAPERS" == "0" ]] && wallpaper_images_exist; then
+        if [[ ! -f "$WALLPAPER_MANIFEST" ]]; then
+            # Older UbuntuRicePack revisions downloaded this exact collection
+            # but did not record its source. Adopt it without a one-time
+            # 395-MiB redownload.
+            write_wallpaper_manifest
+            log "Adopted the existing wallpaper collection; download skipped."
+            log "Set RICE_REFRESH_WALLPAPERS=1 to replace it from the remote source."
+            return 0
+        fi
+
+        if wallpaper_source_matches; then
+            log "Installed wallpapers already match the configured source; download skipped."
+            log "Set RICE_REFRESH_WALLPAPERS=1 to force a fresh wallpaper download."
+            return 0
+        fi
+    fi
+
     FETCH_ROOT="$(
         mktemp -d "${TMPDIR:-/tmp}/ubuntuRicePack-wallpapers.XXXXXX"
     )"
@@ -163,11 +223,11 @@ fetch_wallpapers() {
         "$checkout_dir/$WALLPAPER_REPO_PATH/" \
         "$WALLPAPER_DEST/"
 
-    if ! find "$WALLPAPER_DEST" -type f \
-        \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
-        -o -iname '*.webp' \) -print -quit | grep -q .; then
+    if ! wallpaper_images_exist; then
         fail "The downloaded wallpaper directory contains no supported images."
     fi
+
+    write_wallpaper_manifest
 }
 
 write_wallpaper_rotator() {
@@ -264,13 +324,15 @@ apply_first_wallpaper() {
     local first_image=""
     local uri=""
 
-    first_image="$(
+    while IFS= read -r -d '' first_image; do
+        break
+    done < <(
         find "$WALLPAPER_DEST" -type f \
             \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
-            -o -iname '*.webp' \) |
-            sort |
-            head -n 1
-    )"
+                -o -iname '*.webp' \) \
+            -print0 |
+            sort -z
+    )
     [[ -n "$first_image" ]] || return 0
 
     uri="$(
