@@ -234,6 +234,11 @@ do
 done
 pass "retired conflicting extension source is absent"
 
+bash "$REPO_ROOT/tests/validate-autoinstall.sh" \
+    --template \
+    "$REPO_ROOT/installation/autoinstall.yaml"
+pass "hybrid Ubuntu Desktop autoinstall template validates"
+
 if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' source; do
         node --input-type=module --check <"$source"
