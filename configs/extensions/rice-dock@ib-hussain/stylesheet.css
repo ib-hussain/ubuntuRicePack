@@ -1,12 +1,37 @@
-.dash-item-container .overview-tile .overview-icon,
-.dash-item-container .show-apps .overview-icon {
+.dash-item-container .overview-tile .overview-icon {
   background-color: rgba(255, 255, 255, 0);
 }
 
 .dash-item-container .overview-tile:hover .overview-icon,
-.dash-item-container .overview-tile.focused .overview-icon,
-.dash-item-container .show-apps:hover .overview-icon {
+.dash-item-container .overview-tile.focused .overview-icon {
   background-color: rgba(238, 238, 238, 0.2);
+}
+
+#dashtodockContainer #dash .show-apps.rice-show-apps-button,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:focus,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:hover,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:active,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:checked,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:selected,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:highlighted {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+#dashtodockContainer #dash .show-apps.rice-show-apps-button .overview-icon.rice-show-apps-base-icon,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:focus .overview-icon.rice-show-apps-base-icon,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:hover .overview-icon.rice-show-apps-base-icon,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:active .overview-icon.rice-show-apps-base-icon,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:checked .overview-icon.rice-show-apps-base-icon,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:selected .overview-icon.rice-show-apps-base-icon,
+#dashtodockContainer #dash .show-apps.rice-show-apps-button:highlighted .overview-icon.rice-show-apps-base-icon,
+#dashtodockContainer #dash .rice-show-apps-icon {
+  background-color: rgba(0, 0, 0, 0);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 .dash-item-container .overview-tile .app-grid-running-dot {

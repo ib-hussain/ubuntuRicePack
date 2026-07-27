@@ -182,6 +182,24 @@ mapfile -t logo_files < <(
     fail "Rice Dock stylesheet source is missing"
 grep -Fq "media/logo.png" "$DOCK_DIR/appIcons.js" ||
     fail "Show Applications does not use media/logo.png"
+grep -Fq "style_class: 'rice-show-apps-icon'" "$DOCK_DIR/appIcons.js" ||
+    fail "Show Applications does not use its isolated Rice style class"
+if grep -Fq \
+    "style_class: 'show-apps-icon rice-show-apps-icon'" \
+    "$DOCK_DIR/appIcons.js"
+then
+    fail "Show Applications still inherits shell-theme replacement artwork"
+fi
+for selector in \
+    rice-show-apps-button \
+    rice-show-apps-base-icon \
+    rice-show-apps-icon
+do
+    grep -Fq "$selector" "$DOCK_DIR/stylesheet.css" ||
+        fail "compiled dock stylesheet lacks $selector compatibility rule"
+done
+grep -Fq "background-image: none" "$DOCK_DIR/stylesheet.css" ||
+    fail "Rice Dock does not suppress shell-theme Show Apps artwork"
 if grep -Eq \
     'background-image:[^;]*(logo\.png|arch-logo)' \
     "$DOCK_DIR/stylesheet.css" \
@@ -195,7 +213,7 @@ if find "$DOCK_DIR" -type f -name 'arch-logo.*' -print -quit |
 then
     fail "retired arch-logo asset remains in Rice Dock"
 fi
-pass "Rice Dock uses one unlayered logo.png content source"
+pass "Rice Dock uses one theme-isolated, unlayered logo.png content source"
 
 grep -Fq "TransparentPanelController" "$TOP_BAR_DIR/extension.js" ||
     fail "Rice Top Bar does not start the transparency controller"

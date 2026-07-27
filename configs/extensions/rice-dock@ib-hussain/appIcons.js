@@ -75,6 +75,20 @@ const scrollAction = Object.freeze({
 // module "Dash" did not export DASH_ITEM_LABEL_SHOW_TIME, so let's define it.
 const DASH_ITEM_LABEL_SHOW_TIME = Dash.DASH_ITEM_LABEL_SHOW_TIME ?? 150;
 
+// Keep the custom Show Applications artwork isolated from shell themes.
+// MacTahoe (and several other third-party themes) deliberately replace the
+// stock `show-apps-icon` class with their own background-image.  Giving our
+// FileIcon that stock class therefore layers the theme's Launchpad tile behind
+// logo.png.  These inline styles are a fallback for themes with very specific
+// selectors; the matching stylesheet rules handle normal state changes.
+const RICE_SHOW_APPS_TRANSPARENT_STYLE = [
+    'background-color: rgba(0, 0, 0, 0)',
+    'background-image: none',
+    'border: none',
+    'box-shadow: none',
+    'padding: 0',
+].join('; ');
+
 let recentlyClickedAppLoopId = 0;
 let recentlyClickedApp = null;
 let recentlyClickedAppWindows = null;
@@ -1412,6 +1426,15 @@ export const DockShowAppsIcon = GObject.registerClass({
     _init(position) {
         super._init();
 
+        // Do not remove the stock `show-apps` and `overview-icon` classes:
+        // Dash-to-Dock relies on them for layout.  Add narrowly scoped Rice
+        // classes and neutralize only the visual background on the BaseIcon.
+        // The child St.Icon intentionally does *not* use `show-apps-icon`;
+        // shell themes commonly bind replacement artwork to that class.
+        this.toggleButton.add_style_class_name('rice-show-apps-button');
+        this.icon.add_style_class_name('rice-show-apps-base-icon');
+        this.icon.set_style(RICE_SHOW_APPS_TRANSPARENT_STYLE);
+
         // Re-use appIcon methods
         const {prototype: appIconPrototype} = AppDisplay.AppIcon;
         this.toggleButton.y_expand = false;
@@ -1437,6 +1460,8 @@ export const DockShowAppsIcon = GObject.registerClass({
         this._menuTimeoutId = 0;
 
         this._maybeEnablePopupGestures();
+        console.log(
+            '[rice-dock@ib-hussain] isolated Show Applications logo from shell-theme artwork');
     }
 
     _createIcon(size) {
@@ -1450,7 +1475,8 @@ export const DockShowAppsIcon = GObject.registerClass({
         this._iconActor = new St.Icon({
             gicon: logo,
             icon_size: size,
-            style_class: 'show-apps-icon rice-show-apps-icon',
+            style_class: 'rice-show-apps-icon',
+            style: RICE_SHOW_APPS_TRANSPARENT_STYLE,
             track_hover: true,
         });
         this._iconActor.fallbackIconName = null;
