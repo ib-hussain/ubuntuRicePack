@@ -314,19 +314,12 @@ download_file() {
     local url="$1"
     local destination="$2"
 
-    if command -v curl >/dev/null 2>&1; then
-        curl \
-            --fail \
-            --location \
-            --show-error \
-            --silent \
-            --retry 3 \
-            --retry-all-errors \
-            --connect-timeout 20 \
-            --output "$destination" \
-            "$url"
-    elif command -v wget >/dev/null 2>&1; then
+    
+    if command -v wget >/dev/null 2>&1; then
         wget --tries=3 --timeout=20 --output-document="$destination" "$url"
+    elif command -v curl >/dev/null 2>&1; then
+        curl  --fail  --location --show-error  --silent \
+            --retry 3  --retry-all-errors  --connect-timeout 20 --output "$destination"  "$url"
     else
         fail "Neither curl nor wget is available for downloading $url."
     fi

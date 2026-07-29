@@ -116,6 +116,7 @@ fi
 # Administration and Ubuntu package shortcuts
 alias root='sudo -i'
 alias cls='clear'
+alias nano='nano -l '
 alias please='sudo'
 alias turnoff='sudo poweroff'
 alias reboot-now='sudo reboot'
