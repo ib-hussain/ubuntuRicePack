@@ -1,0 +1,12 @@
+set linenumbers
+set constantshow
+set tabsize 4
+set autoindent
+set mouse
+
+# Enable Syntax Highlighting
+include "/usr/share/nano/*.nanorc"
+set softwrap
+
+set backup
+set backupdir "~/nano-backups"

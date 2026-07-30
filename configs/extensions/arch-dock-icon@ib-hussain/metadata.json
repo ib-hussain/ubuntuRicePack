@@ -1,7 +1,0 @@
-{
-  "uuid": "arch-dock-icon@ib-hussain",
-  "name": "Rice Show Applications Icon",
-  "description": "Uses a custom Show Applications icon with GNOME Shell, Ubuntu Dock, and Dash-to-Dock.",
-  "shell-version": ["50"],
-  "version": 2
-}

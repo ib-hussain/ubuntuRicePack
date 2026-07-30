@@ -12,3 +12,4 @@ reqs.txt
 *.tar.gz
 *temp.*
 archive-settings/*
+logss/**

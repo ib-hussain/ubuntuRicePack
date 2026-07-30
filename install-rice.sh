@@ -27,7 +27,7 @@ REPAIR_PASSWORD_STACK="${RICE_REPAIR_PASSWORD_STACK:-0}"
 SKIP_PACKAGES=0
 SKIP_VSCODE=0
 SKIP_NERD_FONTS=0
-SKIP_VENTOY=0
+SKIP_VENTOY=1
 STRICT_MODE=0
 
 usage() {
@@ -50,17 +50,8 @@ System options:
   --timezone ZONE            Set timezone (default: Asia/Karachi)
   --locale LOCALE            Set locale (default: en_US.UTF-8)
   --python-version VERSION   pyenv Python version (default: 3.12.7)
-  --keep-sudo-password       Do not create passwordless sudo configuration
-  --set-short-password       At the end, run the safe privileged interactive
-                             password workflow (four characters are allowed)
-  --allow-short-passwords    Backward-compatible alias for the option above
   --repair-password-stack    Back up and regenerate Ubuntu's packaged PAM
                              stack, then run the password workflow
-  --skip-python              Do not install/build pyenv Python
-  --skip-packages            Skip apt and external package installation
-  --skip-vscode              Skip restoration of VS Code data
-  --skip-nerd-fonts          Skip verified upstream Nerd Font downloads
-  --skip-ventoy              Skip the independent upstream Ventoy install
   --strict                   Fail on unavailable packages, external installers,
                              Nerd Fonts, GNOME mismatches, or final audit errors
 
@@ -100,37 +91,9 @@ while [[ $# -gt 0 ]]; do
             PYTHON_VERSION="${2:?Missing value for --python-version}"
             shift 2
             ;;
-        --keep-sudo-password)
-            PASSWORDLESS_SUDO=0
-            shift
-            ;;
-        --set-short-password | --allow-short-passwords)
-            SET_SHORT_PASSWORD=1
-            shift
-            ;;
         --repair-password-stack)
             REPAIR_PASSWORD_STACK=1
             SET_SHORT_PASSWORD=1
-            shift
-            ;;
-        --skip-python)
-            INSTALL_PYENV=0
-            shift
-            ;;
-        --skip-packages)
-            SKIP_PACKAGES=1
-            shift
-            ;;
-        --skip-vscode)
-            SKIP_VSCODE=1
-            shift
-            ;;
-        --skip-nerd-fonts)
-            SKIP_NERD_FONTS=1
-            shift
-            ;;
-        --skip-ventoy)
-            SKIP_VENTOY=1
             shift
             ;;
         --strict)
