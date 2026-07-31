@@ -1,29 +1,45 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
 
-choice=$(zenity \
---list \
---title="Power Profile" \
---column="Mode" \
-"Battery Saver" \
-"Balanced" \
-"Performance" \
-"Maximum Performance")
+if ! command -v zenity >/dev/null 2>&1; then
+    printf 'ib-power-menu: zenity is not installed.\n' >&2
+    exit 1
+fi
+
+if ! command -v ib-power-mode >/dev/null 2>&1; then
+    printf 'ib-power-menu: ib-power-mode is not installed or not on PATH.\n' >&2
+    exit 1
+fi
+
+choice="$(
+    zenity \
+        --list \
+        --title="Power Profile" \
+        --column="Mode" \
+        "Battery Saver" \
+        "Balanced" \
+        "Performance" \
+        "Maximum Performance"
+)" || exit 0
 
 case "$choice" in
-
     "Battery Saver")
         ib-power-mode set powersaver
         ;;
-
     "Balanced")
         ib-power-mode set balanced
         ;;
-
     "Performance")
         ib-power-mode set performance
         ;;
-
     "Maximum Performance")
         ib-power-mode set maximum
+        ;;
+    "")
+        exit 0
+        ;;
+    *)
+        printf 'ib-power-menu: unsupported power profile: %s\n' "$choice" >&2
+        exit 2
         ;;
 esac

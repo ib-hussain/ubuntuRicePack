@@ -264,6 +264,158 @@ verify_desktop_launcher() {
         "not found in $DESKTOP_DIR"
 }
 
+verify_regular_file() {
+    local category="$1"
+    local subject="$2"
+    local path="$3"
+
+    if [[ -f "$path" ]]; then
+        report_line "$category" "$subject" present "$path" PASS
+    else
+        record_failure "$category" "$subject" present "missing: $path"
+    fi
+}
+
+verify_nautilus_python() {
+    local extension_file="$TARGET_HOME/.local/share/nautilus-python/extensions/ib_context_tools.py"
+
+    verify_package python3-nautilus
+    verify_regular_file \
+        nautilus-python \
+        ib_context_tools.py \
+        "$extension_file"
+
+    if [[ -f "$extension_file" ]]; then
+        if python3 - "$extension_file" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+compile(path.read_text(encoding="utf-8"), str(path), "exec")
+PY
+        then
+            report_line nautilus-python syntax valid valid PASS
+        else
+            record_failure nautilus-python syntax valid invalid
+        fi
+    fi
+}
+
+verify_vscode_health() {
+    local extension_inventory=""
+    local state_file=""
+    local poisoned_state=0
+
+    if extension_inventory="$(code --list-extensions 2>>"$LOG_FILE")"; then
+        report_line \
+            vscode \
+            extension-database \
+            readable \
+            "${extension_inventory//$'\n'/,}" \
+            PASS
+    else
+        record_failure \
+            vscode \
+            extension-database \
+            readable \
+            "code --list-extensions failed"
+    fi
+
+    for state_file in \
+        "$TARGET_HOME/.vscode/extensions/extensions.json" \
+        "$TARGET_HOME/.vscode/extensions/extensions-list.json"
+    do
+        [[ -f "$state_file" ]] || continue
+
+        if python3 - "$state_file" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    raise SystemExit(0)
+
+if isinstance(data, dict) and "recommendations" in data:
+    raise SystemExit(0)
+
+if path.name == "extensions-list.json" and isinstance(data, list):
+    for item in data:
+        location = item.get("location", {}) if isinstance(item, dict) else {}
+        captured_path = str(location.get("path", "")).lower()
+        if captured_path.startswith("/c:/") or captured_path.startswith("c:/"):
+            raise SystemExit(0)
+
+raise SystemExit(1)
+PY
+        then
+            poisoned_state=1
+            record_failure \
+                vscode \
+                "$(basename -- "$state_file")" \
+                "valid local runtime metadata" \
+                "invalid or captured cross-platform state"
+        fi
+    done
+
+    if ((poisoned_state == 0)); then
+        report_line \
+            vscode \
+            extension-state-format \
+            healthy \
+            healthy \
+            PASS
+    fi
+}
+
+verify_ptyxis_configuration() {
+    local terminal_list="$TARGET_HOME/.config/ubuntu-xdg-terminals.list"
+    local palette_file="$TARGET_HOME/.local/share/org.gnome.Ptyxis/palettes/IB-Glass.palette"
+    local first_terminal=""
+    local profile_uuid=""
+
+    verify_package ptyxis
+    verify_package xdg-terminal-exec
+    verify_regular_file ptyxis "IB Glass palette" "$palette_file"
+    verify_regular_file ptyxis "Ubuntu terminal preference" "$terminal_list"
+
+    [[ -f "$terminal_list" ]] &&
+        first_terminal="$(sed -n '1p' "$terminal_list")"
+    if [[ "$first_terminal" == "org.gnome.Ptyxis.desktop:new-window" ]]; then
+        report_line \
+            ptyxis \
+            default-terminal \
+            org.gnome.Ptyxis.desktop:new-window \
+            "$first_terminal" \
+            PASS
+    else
+        record_failure \
+            ptyxis \
+            default-terminal \
+            org.gnome.Ptyxis.desktop:new-window \
+            "${first_terminal:-unset}"
+    fi
+
+    verify_gsettings org.gnome.Ptyxis use-system-font false
+    verify_gsettings org.gnome.Ptyxis font-name "'Noto Sans Mono 12'"
+    verify_gsettings org.gnome.Ptyxis interface-style "'dark'"
+    profile_uuid="$(
+        gsettings get org.gnome.Ptyxis default-profile-uuid 2>/dev/null |
+            tr -d "'" || true
+    )"
+    if [[ -n "$profile_uuid" ]]; then
+        verify_relocatable_gsettings \
+            org.gnome.Ptyxis.Profile \
+            "/org/gnome/Ptyxis/Profiles/$profile_uuid/" \
+            palette \
+            "'IB Glass'"
+    else
+        record_failure ptyxis default-profile-uuid set unset
+    fi
+}
+
 extension_present() {
     local uuid="$1"
 
@@ -589,6 +741,9 @@ write_final_report() {
 
     for uuid in \
         imagemagick \
+        papirus-icon-theme \
+        audacious \
+        audacious-plugins \
         unrar \
         gnome-browser-connector \
         gnome-screenshot \
@@ -630,6 +785,9 @@ write_final_report() {
         org.gnome.Terminal.desktop \
         gnome-terminal.desktop
     verify_desktop_launcher "Audacious" audacious.desktop
+    verify_nautilus_python
+    verify_vscode_health
+    verify_ptyxis_configuration
 
     for uuid in "${REQUIRED_ENABLED_EXTENSIONS[@]}"; do
         verify_extension "$uuid" enabled

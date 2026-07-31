@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Offline structural and product-policy validation for the UbuntuRicePack
-# Ubuntu Desktop autoinstall template or a locally prepared ready file.
+# Offline structural and product-policy validation for UbuntuRicePack's
+# autoinstall template or a private prepared copy.
 
 set -Eeuo pipefail
 IFS=$'\n\t'
@@ -17,8 +17,8 @@ Usage:
   bash tests/validate-autoinstall.sh [FILE]
   bash tests/validate-autoinstall.sh --template [FILE]
 
-Without --template, validation fails while the password placeholder remains.
-Use --template only for validating the tracked, intentionally incomplete file.
+Without --template, validation requires both the password hash and immutable
+repository commit to have been inserted by prepare-autoinstall.sh.
 USAGE
 }
 
@@ -28,7 +28,7 @@ while [[ $# -gt 0 ]]; do
             ALLOW_TEMPLATE=1
             shift
             ;;
-        --help|-h)
+        --help | -h)
             usage
             exit 0
             ;;
@@ -62,8 +62,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-command -v python3 >/dev/null 2>&1 ||
-    fail "python3 is required."
+command -v python3 >/dev/null 2>&1 || fail "python3 is required."
 python3 -c 'import yaml' >/dev/null 2>&1 ||
     fail "PyYAML is required (Ubuntu package: python3-yaml)."
 [[ -f "$AUTOINSTALL_FILE" ]] ||
@@ -84,9 +83,9 @@ import yaml
 path = Path(sys.argv[1])
 allow_template = sys.argv[2] == "1"
 late_command_file = Path(sys.argv[3])
-placeholder = "$6$REPLACE_WITH_A_LOCAL_SHA512_CRYPT_HASH"
+password_placeholder = "$6$REPLACE_WITH_A_LOCAL_SHA512_CRYPT_HASH"
+commit_placeholder = "REPLACE_WITH_REPOSITORY_COMMIT"
 expected_url = "https://github.com/ib-hussain/ubuntuRicePack.git"
-expected_commit = "7e7269acecbda4545b1ff89864e6178475b28e12"
 
 
 def require(condition: bool, message: str) -> None:
@@ -108,26 +107,27 @@ config = document["autoinstall"]
 require(isinstance(config, dict), "autoinstall must be a mapping")
 require(config.get("version") == 1, "autoinstall version must be 1")
 
-interactive = config.get("interactive-sections")
 require(
-    interactive == ["network", "storage"],
+    config.get("interactive-sections") == ["network", "storage"],
     "network and storage must be the two interactive sections",
 )
 require(
     "storage" not in config,
-    "a storage recipe is forbidden; disk selection must remain interactive",
+    "an automated storage recipe is forbidden",
 )
 require(
     "network" not in config,
-    "a network recipe is forbidden; network selection must remain interactive",
+    "an automated network recipe is forbidden",
 )
 
 require(config.get("locale") == "en_US.UTF-8", "locale mismatch")
 require(config.get("timezone") == "Asia/Karachi", "timezone mismatch")
 keyboard = config.get("keyboard")
 require(
-    isinstance(keyboard, dict) and keyboard.get("layout") == "us",
-    "keyboard layout must be us",
+    isinstance(keyboard, dict)
+    and keyboard.get("layout") == "us"
+    and keyboard.get("variant") == "",
+    "keyboard must be US with an empty variant",
 )
 
 identity = config.get("identity")
@@ -137,10 +137,10 @@ require(identity.get("username") == "ibrahim", "username mismatch")
 require(identity.get("hostname") == "ibLaptop", "hostname mismatch")
 password = identity.get("password")
 require(isinstance(password, str), "identity password must be a string")
-if password == placeholder:
+if password == password_placeholder:
     require(
         allow_template,
-        "password placeholder remains; run installation/prepare-autoinstall.sh",
+        "password placeholder remains; run prepare-autoinstall.sh",
     )
 else:
     sha512_crypt = re.compile(
@@ -156,15 +156,11 @@ ssh = config.get("ssh")
 require(isinstance(ssh, dict), "ssh section is required")
 require(ssh.get("install-server") is True, "SSH server must be installed")
 require(ssh.get("allow-pw") is True, "SSH password login must be enabled")
-require(
-    ssh.get("authorized-keys") == [],
-    "authorized-keys must remain an explicit empty list until a real key is supplied",
-)
+require(ssh.get("authorized-keys") == [], "authorized-keys must be []")
 
 for section in ("drivers", "codecs"):
-    value = config.get(section)
     require(
-        isinstance(value, dict) and value.get("install") is True,
+        config.get(section) == {"install": True},
         f"{section}.install must be true",
     )
 require(config.get("oem") == {"install": "auto"}, "OEM install must be auto")
@@ -174,17 +170,9 @@ require(config.get("snaps") == [], "snaps must be an empty list")
 
 packages = config.get("packages")
 require(isinstance(packages, list), "packages must be a list")
-required_packages = {
-    "ca-certificates",
-    "git",
-    "gnome-terminal",
-    "openssh-server",
-    "python3",
-    "python3-yaml",
-}
 require(
-    required_packages.issubset(set(packages)),
-    "bootstrap package set is incomplete",
+    {"ca-certificates", "git", "openssh-server"}.issubset(set(packages)),
+    "minimal first-login/SSH package set is incomplete",
 )
 require(
     not {"firefox", "snapd"}.intersection(packages),
@@ -193,8 +181,8 @@ require(
 
 late_commands = config.get("late-commands")
 require(
-    isinstance(late_commands, list) and late_commands,
-    "late-commands must be a non-empty list",
+    isinstance(late_commands, list) and len(late_commands) == 1,
+    "exactly one reviewed late-command block is required",
 )
 require(
     all(isinstance(command, str) for command in late_commands),
@@ -204,33 +192,68 @@ late_blob = "\n".join(late_commands)
 
 required_fragments = (
     expected_url,
-    expected_commit,
-    'RICE_COMMIT=7e7269acecbda4545b1ff89864e6178475b28e12',
-    'git -C "$RICE_DIR" checkout --detach FETCH_HEAD',
-    'git -C "$RICE_DIR" rev-parse HEAD',
-    "apt-get purge -y",
-    "apt-mark hold snapd firefox",
+    'curtin in-target --target="$TARGET" --',
     "Pin-Priority: -10",
-    "sshd -t",
-    "systemctl enable ssh.service",
     "PermitRootLogin no",
     "PasswordAuthentication yes",
+    "KbdInteractiveAuthentication no",
     "ssh-keygen -A",
+    "sshd -t",
+    "systemctl enable ssh.service",
     "visudo -cf",
     "ubuntu-rice-first-login.desktop",
-    "gnome-terminal --wait --",
-    "RICE_PASSWORDLESS_SUDO=0",
-    "bash ./install-rice.sh --mode desktop --strict",
+    "Terminal=true",
     "first-login.complete",
     "systemd-cat -t ubuntu-rice-first-login",
+    'git -C "$RICE_DIR" fetch',
+    'git -C "$RICE_DIR" checkout --detach FETCH_HEAD',
+    'RICE_PASSWORDLESS_SUDO=0 bash ./install-rice.sh -m desktop',
 )
 for fragment in required_fragments:
     require(fragment in late_blob, f"late command is missing: {fragment}")
+
+commit_values = re.findall(
+    r'(?:RICE_COMMIT="|rice_commit=)([A-Za-z0-9_]+)"?',
+    late_blob,
+)
+require(len(commit_values) == 2, "expected two pinned commit values")
+require(commit_values[0] == commit_values[1], "pinned commit values differ")
+if commit_values[0] == commit_placeholder:
+    require(
+        allow_template,
+        "repository commit placeholder remains; run prepare-autoinstall.sh",
+    )
+else:
+    require(
+        bool(re.fullmatch(r"[0-9a-f]{40}", commit_values[0])),
+        "repository pin is not a full Git commit",
+    )
+
+require(
+    "<<'FIRST_LOGIN'" in late_blob,
+    "first-login script heredoc is missing",
+)
+installer_phase = late_blob.split("<<'FIRST_LOGIN'", 1)[0]
+for forbidden in ("apt-get ", "git clone", "git fetch", 'chroot "$TARGET"'):
+    require(
+        forbidden not in installer_phase,
+        f"installer-critical late phase contains forbidden operation: {forbidden}",
+    )
 
 require(
     "git checkout main" not in late_blob
     and "git checkout origin/main" not in late_blob,
     "bootstrap must not check out a moving branch",
+)
+
+error_commands = config.get("error-commands")
+require(
+    isinstance(error_commands, list) and error_commands,
+    "error-commands must preserve live-installer diagnostics",
+)
+require(
+    "ubuntu-rice-live-installer-logs.tar.gz" in "\n".join(error_commands),
+    "error-commands must archive installer logs into the target",
 )
 
 late_command_file.write_text(
@@ -239,8 +262,8 @@ late_command_file.write_text(
 )
 
 print(
-    "PASS: YAML structure, fully interactive storage/network, identity, "
-    "SSH, no-Snap policy, pinned bootstrap, and first-login workflow validate"
+    "PASS: schema shape, interactive storage/network, identity, SSH, "
+    "minimal late phase, pinned first-login bootstrap, and diagnostics validate"
 )
 PY
 
@@ -248,7 +271,7 @@ bash -n "$LATE_COMMAND_FILE"
 printf 'PASS: embedded late-command and first-login shell parse\n'
 
 if [[ "$ALLOW_TEMPLATE" == "1" ]]; then
-    printf 'PASS: autoinstall template is structurally valid (password intentionally unset)\n'
+    printf 'PASS: autoinstall template is structurally valid (private values intentionally unset)\n'
 else
     printf 'PASS: autoinstall is ready to import: %s\n' "$AUTOINSTALL_FILE"
 fi

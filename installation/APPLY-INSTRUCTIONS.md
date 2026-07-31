@@ -7,10 +7,16 @@ and storage interactive and never contains an automated disk recipe.
 
 ## Install Ubuntu Desktop with the hybrid autoinstall
 
-First create a private, ready-to-import copy. The helper prompts locally and
-stores only a SHA-512 password hash in the generated file:
+First commit and push the exact revision you want the new machine to run. The
+helper refuses a dirty tree or a local commit that is not `origin/main`; this
+prevents an autoinstall file from pointing at code GitHub cannot fetch.
+
+Then create a private, ready-to-import copy. The helper prompts locally and
+stores a SHA-512 password hash plus the immutable pushed Git commit:
 
 ```bash
+git status
+git push origin main
 bash installation/prepare-autoinstall.sh
 bash tests/validate-autoinstall.sh installation/autoinstall-ready.yaml
 ```
@@ -23,14 +29,16 @@ The installer will still stop for:
 1. network selection; and
 2. the complete Ubuntu storage page.
 
-Select a working Internet connection. The base operating system can install
-offline, but the pinned repository checkout, current updates, drivers, codecs,
-and external packages intentionally require network access.
+Select a working Internet connection. The Desktop ISO must reach Ubuntu's
+archive to install OpenSSH Server and the requested updates, drivers, and
+codecs. The rice repository itself is no longer downloaded inside Subiquity's
+fatal late-command phase; it is fetched with retries after the first login.
 
 At the storage page, make the real-machine decision yourself: erase the
 selected disk, install alongside another operating system, or use manual
 partitioning. The YAML contains no disk match, wipe, partition, filesystem, or
-mount recipe.
+mount recipe. Check the target device by model and capacity, and never select
+the USB stick that contains the live installer.
 
 After the installer finishes it reboots. Log in as `ibrahim`; a visible
 terminal starts the pinned UbuntuRicePack revision exactly once. On success it
@@ -50,14 +58,20 @@ Direct root SSH login is disabled. Password SSH login is enabled as requested.
 If the selected password is short, keep port 22 off the public Internet; add an
 SSH key and disable password authentication before exposing the machine.
 
-The repository is fetched at the immutable revision:
-
-```text
-7e7269acecbda4545b1ff89864e6178475b28e12
-```
+The helper inserts the current pushed `origin/main` commit in both bootstrap
+audit locations. No moving branch is checked out.
 
 The generated `installation/autoinstall-ready.yaml` is ignored by Git because
 its password hash is reusable authentication material.
+
+If Subiquity fails, preserve
+`/var/log/installer/subiquity-server-debug.log` and
+`/var/log/installer/curtin-install.log` before leaving the live session. When
+the target filesystem exists, the error handler also writes
+`/var/log/installer/ubuntu-rice-live-installer-logs.tar.gz` into the installed
+target. A failed shell late command cannot rewrite the live ISO; persistent
+failure before partitioning normally points to the imported YAML, installer
+state, or the USB media rather than a rice script modifying the ISO.
 
 ## What this build changes
 
@@ -96,7 +110,7 @@ invariant, transparency controls, and removal of retired extension source.
 Run as the normal logged-in desktop user:
 
 ```bash
-./install-rice.sh --mode desktop
+bash ./install-rice.sh -m desktop
 ```
 
 Then log out and back in. A newly copied GNOME Shell extension cannot always
@@ -105,16 +119,14 @@ enter the already-running Shell process safely.
 Useful options:
 
 ```text
---strict
---skip-nerd-fonts
---skip-ventoy
---skip-vscode
---skip-python
---skip-packages
---keep-hostname
---keep-sudo-password
---set-short-password
---repair-password-stack
+-m, --mode MODE
+-H, --host NAME
+-K, --keep-host
+-t, --tz ZONE
+-l, --locale LOCALE
+-p, --python VERSION
+-r, --repair-pass
+-s, --strict
 ```
 
 `--strict` makes unavailable packages, external installers, Nerd Fonts, GNOME
@@ -201,16 +213,10 @@ To collect diagnostics without opening the prompt:
 bash scripts/09-set-local-password.sh --diagnose-only
 ```
 
-The main installer can run the same helper at the end:
+To perform the explicit PAM repair through the main installer:
 
 ```bash
-./install-rice.sh --mode desktop --set-short-password
-```
-
-To perform the explicit PAM repair through the main installer instead:
-
-```bash
-./install-rice.sh --mode desktop --repair-password-stack
+bash ./install-rice.sh -m desktop -r
 ```
 
 ## WSL
@@ -218,7 +224,7 @@ To perform the explicit PAM repair through the main installer instead:
 Use the same entry point:
 
 ```bash
-./install-rice.sh --mode wsl
+bash ./install-rice.sh -m wsl
 ```
 
 Desktop GNOME stages and extensions are not run in WSL. If `/etc/wsl.conf`

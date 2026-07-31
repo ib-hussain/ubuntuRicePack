@@ -6,7 +6,8 @@ ms-vscode.makefile-tools
 ms-vscode.hexeditor
 alexcvzz.vscode-sqlite
 docker.docker
-ms-vscode-remote.remote-wsl
+# Windows-only; deliberately not installed on native Ubuntu:
+# ms-vscode-remote.remote-wsl
 ms-toolsai.jupyter-renderers
 ms-toolsai.jupyter-keymap
 ms-toolsai.vscode-jupyter-cell-tags
@@ -43,4 +44,3 @@ github.vscode-github-actions
 ms-python.vscode-pylance
 redhat.vscode-yaml
 ms-kubernetes-tools.vscode-kubernetes-tools
-        

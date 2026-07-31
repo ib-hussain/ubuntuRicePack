@@ -48,16 +48,13 @@ wallpaper_images_exist() {
     local image=""
 
     [[ -d "$WALLPAPER_DEST" ]] || return 1
-    while IFS= read -r -d '' image; do
-        return 0
-    done < <(
+    image="$(
         find "$WALLPAPER_DEST" -type f \
             \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
                 -o -iname '*.webp' \) \
-            -print0 2>/dev/null
-    )
-
-    return 1
+            -print -quit 2>/dev/null
+    )"
+    [[ -n "$image" ]]
 }
 
 wallpaper_source_matches() {

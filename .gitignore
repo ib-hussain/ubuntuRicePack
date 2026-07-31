@@ -12,4 +12,9 @@ reqs.txt
 *.tar.gz
 *temp.*
 archive-settings/*
-logss/**
+
+# Generated/private installer state and local diagnostics.
+/installation/autoinstall-ready.yaml
+/logss/
+**/__pycache__/
+*.py[cod]

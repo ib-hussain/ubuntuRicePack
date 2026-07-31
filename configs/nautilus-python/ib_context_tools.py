@@ -1,148 +1,129 @@
-from gi.repository import Nautilus, GObject
+"""UbuntuRicePack context-menu actions for Nautilus 4."""
+
+from pathlib import Path
+import logging
 import os
+import shutil
 import subprocess
 import urllib.parse
 
+import gi
+
+gi.require_version("Nautilus", "4.0")
+from gi.repository import GObject, Nautilus  # noqa: E402
+
+
+LOGGER = logging.getLogger("ubuntuRicePack.nautilus")
+
 
 class IBToolsExtension(GObject.GObject, Nautilus.MenuProvider):
-    def _uri_to_path(self, uri):
-        """Convert file URI to local path"""
-        if not uri:
+    """Provide New Text File and Open with Code for local folders."""
+
+    @staticmethod
+    def _path_from_file(file_info):
+        if file_info is None:
             return None
-        if uri.startswith("file://"):
-            return urllib.parse.unquote(uri[7:])
-        return None
 
-    def _path_from_file(self, file_obj):
-        """Extract path from Nautilus file object"""
         try:
-            uri = file_obj.get_uri()
-            path = self._uri_to_path(uri)
-            if path and os.path.exists(path):
-                return path
-        except Exception:
+            location = file_info.get_location()
+            if location is not None:
+                path = location.get_path()
+                if path:
+                    return Path(path)
+        except (AttributeError, TypeError):
             pass
-        return os.path.expanduser("~")
 
-    def _directory_for_selection(self, files):
-        """Get directory path from selection"""
+        try:
+            uri = file_info.get_uri()
+        except (AttributeError, TypeError):
+            return None
+
+        if not uri or not uri.startswith("file://"):
+            return None
+        return Path(urllib.parse.unquote(urllib.parse.urlparse(uri).path))
+
+    @classmethod
+    def _directory_for_selection(cls, files):
         if not files:
-            return os.path.expanduser("~")
+            return None
 
-        path = self._path_from_file(files[0])
-        return path if os.path.isdir(path) else os.path.dirname(path)
+        path = cls._path_from_file(files[0])
+        if path is None:
+            return None
+        return path if path.is_dir() else path.parent
 
-    def _open_code(self, menu, path):
-        """Open file/folder in VS Code with Wayland support"""
-        code_bin = "/usr/bin/code"  # visual-studio-code-bin installs here
-        
-        if not os.path.exists(code_bin):
-            subprocess.Popen([
-                "notify-send",
+    @staticmethod
+    def _notify(title, message):
+        notifier = shutil.which("notify-send")
+        if notifier is None:
+            LOGGER.warning("%s: %s", title, message)
+            return
+        subprocess.Popen(
+            [notifier, "--icon=dialog-error", title, message],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+
+    def _open_code(self, _menu_item, path):
+        code = shutil.which("code")
+        if code is None:
+            self._notify(
                 "VS Code Not Found",
-                "Visual Studio Code is not installed",
-                "--icon=dialog-error"
-            ])
+                "Install Visual Studio Code before using Open with Code.",
+            )
             return
 
         try:
-            env = os.environ.copy()
-            # Ensure Wayland native support
-            env["ELECTRON_OZONE_PLATFORM_HINT"] = "wayland"
-            env["GDK_BACKEND"] = "wayland"
-            
             subprocess.Popen(
-                [code_bin, "--reuse-window", path],
-                env=env,
+                [code, "--reuse-window", os.fspath(path)],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                start_new_session=True
+                start_new_session=True,
             )
-        except Exception as e:
-            subprocess.Popen([
-                "notify-send",
-                "Open with Code",
-                f"Failed to open: {str(e)}",
-                "--icon=dialog-error"
-            ])
+        except OSError as error:
+            LOGGER.exception("Could not start VS Code")
+            self._notify("Open with Code", f"Could not start VS Code: {error}")
 
-    def _new_text_file(self, menu, path):
-        """Create new empty text file with auto-numbering"""
-        base = "New Text File"
-        candidate = os.path.join(path, f"{base}.txt")
-        i = 1
+    def _new_text_file(self, _menu_item, directory):
+        for number in range(0, 10_000):
+            suffix = "" if number == 0 else f" {number}"
+            candidate = directory / f"New Text File{suffix}.txt"
+            try:
+                candidate.touch(mode=0o644, exist_ok=False)
+                return
+            except FileExistsError:
+                continue
+            except OSError as error:
+                LOGGER.exception("Could not create %s", candidate)
+                self._notify("New File Error", f"Could not create file: {error}")
+                return
 
-        while os.path.exists(candidate):
-            candidate = os.path.join(path, f"{base} {i}.txt")
-            i += 1
+        self._notify("New File Error", "No unused file name could be found.")
 
-        try:
-            open(candidate, "w").close()
-        except Exception as e:
-            subprocess.Popen([
-                "notify-send",
-                "New File Error",
-                f"Failed to create file: {str(e)}",
-                "--icon=dialog-error"
-            ])
+    def _create_menu_items(self, directory):
+        if directory is None or not directory.is_dir():
+            return []
 
-    def _create_menu_items(self, path):
-        """Create all menu items for a given path"""
-        # New File menu item
         new_file_item = Nautilus.MenuItem(
             name="IBTools::NewTextFile",
-            label="New File",
-            tip="Create a new empty text file",
-            icon="text-x-generic"
+            label="New Text File",
+            tip="Create an empty text file in this folder",
+            icon="text-x-generic",
         )
-        new_file_item.connect("activate", self._new_text_file, path)
+        new_file_item.connect("activate", self._new_text_file, directory)
 
-        # Open with Code menu item
         code_item = Nautilus.MenuItem(
             name="IBTools::OpenWithCode",
             label="Open with Code",
-            tip="Open in Visual Studio Code",
-            icon="code"
+            tip="Open this location in Visual Studio Code",
+            icon="com.visualstudio.code",
         )
-        code_item.connect("activate", self._open_code, path)
-
+        code_item.connect("activate", self._open_code, directory)
         return [new_file_item, code_item]
 
     def get_background_items(self, current_folder):
-        """Right-click on empty space in folder"""
-        path = self._path_from_file(current_folder)
-        return self._create_menu_items(path)
+        return self._create_menu_items(self._path_from_file(current_folder))
 
     def get_file_items(self, files):
-        """Right-click on selected files/folders"""
-        path = self._directory_for_selection(files)
-        return self._create_menu_items(path)
-
-'''
-To install it:
-
-```bash
-# Copy to Nautilus extensions directory
-mkdir -p ~/.local/share/nautilus-python/extensions/
-cp ib_tools.py ~/.local/share/nautilus-python/extensions/
-
-# Remove old extensions if they exist
-rm -f ~/.local/share/nautilus-python/extensions/ib_context_tools.py
-rm -f ~/.local/share/nautilus-python/extensions/open-with-code.py
-
-# Restart Nautilus
-nautilus -q
-```
-
-Key features of this combined version:
-- **Only 2 menu items**: "New File" and "Open with Code"
-- **Wayland optimized**: Sets proper environment variables for native Wayland support
-- **Uses `--reuse-window`**: Opens files in existing VS Code window
-- **Better error handling**: Desktop notifications if something fails
-- **Clean URI parsing**: Takes the better approach from `open-with-code.py`
-- **Correct binary path**: Points directly to where `visual-studio-code-bin` installs
-
-The script will appear when you right-click in any folder or on any file selection in Nautilus.
-
-'''
-
+        return self._create_menu_items(self._directory_for_selection(files))

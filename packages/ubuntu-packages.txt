@@ -146,3 +146,131 @@ vlc-plugin-visualization
 #   installer in the dedicated local-AI script, and only after deciding whether
 #   Ollama should run inside WSL or on the Windows host.
 #   Official instructions: https://docs.ollama.com/linux
+
+# ---------------------------------------------------------------------------
+# GNOME 50 desktop, appearance, and configuration
+gdm3
+gnome-session
+gnome-shell
+gnome-shell-extensions
+gnome-shell-ubuntu-extensions
+gnome-control-center
+gnome-settings-daemon
+gnome-system-monitor
+gnome-tweaks
+gnome-software
+gnome-keyring
+gnome-shell-extension-manager
+dconf-cli
+dconf-editor
+libglib2.0-bin
+desktop-file-utils
+shared-mime-info
+libnotify-bin
+zenity
+
+# Ubuntu 26.04 uses Ptyxis as its Terminal application. xdg-terminal-exec
+# makes the same choice available to Ctrl+Alt+T and "Open in Terminal".
+ptyxis
+xdg-terminal-exec
+
+# ---------------------------------------------------------------------------
+# GTK, portals, and the exact icon theme selected by the GNOME configuration
+libgtk-3-0t64
+libgtk-3-bin
+libgtk-4-1
+libadwaita-1-0
+gtk-update-icon-cache
+sassc
+xdg-desktop-portal
+xdg-desktop-portal-gnome
+xdg-desktop-portal-gtk
+xdg-user-dirs
+xdg-user-dirs-gtk
+xdg-utils
+papirus-icon-theme
+
+# ---------------------------------------------------------------------------
+# Nautilus, storage, filesystems, archives, and file sharing
+nautilus
+python3-nautilus
+nautilus-image-converter
+nautilus-share
+gnome-sushi
+gvfs
+gvfs-backends
+gvfs-fuse
+udisks2
+ntfs-3g
+exfatprogs
+dosfstools
+mtools
+gnome-disk-utility
+gparted
+file-roller
+
+# ---------------------------------------------------------------------------
+# Desktop applications, documents, images, and media
+qbittorrent
+audacious
+audacious-plugins
+celluloid
+mpv
+gthumb
+loupe
+ffmpegthumbnailer
+baobab
+papers
+gsimplecal
+flameshot
+
+# ---------------------------------------------------------------------------
+# Audio, Bluetooth, power, input, and X11 compatibility
+alsa-utils
+blueman
+bluez
+brightnessctl
+acpi
+linux-tools-generic
+pamixer
+pavucontrol
+playerctl
+pipewire
+pipewire-pulse
+wireplumber
+power-profiles-daemon
+keyd
+xcape
+xclip
+xdotool
+wmctrl
+x11-xserver-utils
+xwayland
+
+# ---------------------------------------------------------------------------
+# Networking, kernel, firmware, graphics, and boot support
+network-manager
+network-manager-applet
+linux-generic
+linux-firmware
+intel-microcode
+libgl1-mesa-dri
+mesa-vulkan-drivers
+efibootmgr
+os-prober
+grub2-common
+
+# ---------------------------------------------------------------------------
+# Fonts used by the rice. The three patched Nerd Font archives are installed
+# and SHA-256 verified by stage 03.
+fonts-noto-core
+fonts-noto-extra
+fonts-noto-cjk
+fonts-noto-color-emoji
+fonts-noto-mono
+fonts-dejavu-core
+fonts-liberation
+fonts-ubuntu
+fonts-jetbrains-mono
+fonts-powerline
+fontconfig

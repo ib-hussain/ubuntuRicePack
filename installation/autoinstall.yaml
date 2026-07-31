@@ -1,28 +1,21 @@
 #cloud-config
 #
-# UbuntuRicePack hybrid Ubuntu Desktop autoinstall template.
+# UbuntuRicePack Ubuntu Desktop autoinstall template.
 #
-# IMPORTANT:
-#   1. Do not import this template until the password placeholder below has
-#      been replaced. Run:
-#        bash installation/prepare-autoinstall.sh
-#   2. Storage and networking deliberately remain interactive.
-#   3. There is intentionally NO `storage:` section. The Ubuntu installer must
-#      show its normal disk screen so that the operator chooses erase,
-#      alongside/dual-boot, or manual partitioning on the actual machine.
+# Prepare a private importable copy with:
+#   bash installation/prepare-autoinstall.sh
 #
+# Storage and networking are deliberately interactive. There is no automated
+# storage recipe: the operator must choose the destination disk and layout.
 autoinstall:
   version: 1
 
-  # These are the only installer pages that remain interactive. In
-  # particular, never replace `storage` with an automated disk recipe. Select
-  # a working Internet connection because the pinned bootstrap requires it.
   interactive-sections:
     - network
     - storage
 
   locale: en_US.UTF-8
-  keyboard: 
+  keyboard:
     layout: us
     variant: ""
   timezone: Asia/Karachi
@@ -31,14 +24,8 @@ autoinstall:
     realname: Ibrahim Hussain
     username: ibrahim
     hostname: ibLaptop
-    # Generate this locally with installation/prepare-autoinstall.sh.
-    # It may represent a short password, but password-authenticated SSH with a
-    # weak password must never be exposed directly to the public internet.
     password: "$6$REPLACE_WITH_A_LOCAL_SHA512_CRYPT_HASH"
 
-  # The machine is intended to act as a server as well as a GNOME desktop.
-  # Root login is disabled again in late-commands. Password login is enabled
-  # so the server is immediately usable; migrate to an SSH key afterward.
   ssh:
     install-server: true
     allow-pw: true
@@ -52,25 +39,14 @@ autoinstall:
     install: auto
   updates: all
 
-  # These packages are needed before the pinned repository bootstrap and its
-  # first-login GNOME stage. The rice installs its complete package set later.
+  # Keep installation-time dependencies intentionally small. The full rice is
+  # installed visibly after the first GNOME login, where failures can be read
+  # and retried without aborting or damaging the operating-system install.
   packages:
     - ca-certificates
-    - curl
     - git
-    - gdb
-    - build-essential
-    - gcc
-    - g++
-    - clang
-    - gnome-terminal
     - openssh-server
-    - python3
-    - python3-yaml
-    - rsync
 
-  # Do not request any Snap packages. The late command also removes the
-  # Desktop image's seeded snapd/Firefox packages and pins them out.
   snaps: []
 
   late-commands:
@@ -80,163 +56,167 @@ autoinstall:
       TARGET=/target
       USER_NAME=ibrahim
       USER_HOME=/home/ibrahim
-      RICE_DIR="$USER_HOME/ubuntuRicePack"
-      RICE_URL=https://github.com/ib-hussain/ubuntuRicePack.git
-      RICE_COMMIT=7e7269acecbda4545b1ff89864e6178475b28e12
 
-      # Enforce the repository's no-Snap/no-Firefox policy in the installed
-      # target without relying on a service running inside the chroot.
+      # Configure policy files only. Do not download repositories, purge
+      # packages, or run apt here: any non-zero late command aborts Subiquity.
       install -d -m 0755 "$TARGET/etc/apt/preferences.d"
-      cat >"$TARGET/etc/apt/preferences.d/00-no-snapd-firefox" <<'NO_SNAP_PREFERENCE'
+      cat >"$TARGET/etc/apt/preferences.d/00-ubuntu-rice-no-snap" <<'NO_SNAP'
+      # Managed by ubuntuRicePack.
       Package: snapd firefox
       Pin: release *
       Pin-Priority: -10
-      NO_SNAP_PREFERENCE
+      NO_SNAP
 
-      for package in firefox snapd; do
-          if chroot "$TARGET" dpkg-query -W -f='${db:Status-Status}' "$package" 2>/dev/null |
-              grep -qx installed
-          then
-              chroot "$TARGET" env DEBIAN_FRONTEND=noninteractive \
-                  apt-get purge -y "$package"
-          fi
-      done
-      chroot "$TARGET" apt-mark hold snapd firefox
-
-      for package in firefox snapd; do
-          if chroot "$TARGET" dpkg-query -W -f='${db:Status-Status}' "$package" 2>/dev/null |
-              grep -qx installed
-          then
-              printf 'ERROR: prohibited package remains installed: %s\n' "$package" >&2
-              exit 1
-          fi
-      done
-
-      # Install and validate a real SSH server. Password login is kept for the
-      # requested immediately usable server; direct root login stays disabled.
       install -d -m 0755 "$TARGET/etc/ssh/sshd_config.d"
       cat >"$TARGET/etc/ssh/sshd_config.d/01-ubuntu-rice-server.conf" <<'SSH_CONFIG'
       PermitRootLogin no
       PasswordAuthentication yes
-      KbdInteractiveAuthentication yes
+      KbdInteractiveAuthentication no
       UsePAM yes
       SSH_CONFIG
-      install -d -m 0755 "$TARGET/run/sshd"
-      chroot "$TARGET" ssh-keygen -A
-      chroot "$TARGET" sshd -t
-      chroot "$TARGET" systemctl enable ssh.service
 
-      # The rice installer intentionally uses sudo from the normal GNOME user.
-      # Install a minimal, syntax-checked sudoers drop-in for that one account.
+      install -d -m 0755 "$TARGET/run/sshd"
+      curtin in-target --target="$TARGET" -- ssh-keygen -A
+      curtin in-target --target="$TARGET" -- sshd -t
+      curtin in-target --target="$TARGET" -- systemctl enable ssh.service
+
       printf '%s ALL=(ALL:ALL) NOPASSWD: ALL\n' "$USER_NAME" \
           >"$TARGET/etc/sudoers.d/90-ubuntu-rice-$USER_NAME"
       chmod 0440 "$TARGET/etc/sudoers.d/90-ubuntu-rice-$USER_NAME"
-      chroot "$TARGET" visudo -cf "/etc/sudoers.d/90-ubuntu-rice-$USER_NAME"
+      curtin in-target --target="$TARGET" -- \
+          visudo -cf "/etc/sudoers.d/90-ubuntu-rice-$USER_NAME"
 
-      # Fetch exactly the reviewed product revision, not a moving branch tip.
-      install -d -m 0755 "$TARGET$USER_HOME"
-      chroot "$TARGET" git init "$RICE_DIR"
-      chroot "$TARGET" git -C "$RICE_DIR" remote add origin "$RICE_URL"
-      chroot "$TARGET" git -C "$RICE_DIR" fetch --depth=1 origin "$RICE_COMMIT"
-      chroot "$TARGET" git -C "$RICE_DIR" checkout --detach FETCH_HEAD
-      ACTUAL_COMMIT="$(chroot "$TARGET" git -C "$RICE_DIR" rev-parse HEAD)"
-      if [ "$ACTUAL_COMMIT" != "$RICE_COMMIT" ]; then
-          printf 'ERROR: expected rice commit %s, got %s\n' \
-              "$RICE_COMMIT" "$ACTUAL_COMMIT" >&2
-          exit 1
-      fi
-
-      # Run the GNOME-dependent product installer visibly, once, from the
-      # first real GNOME login. A failed run remains scheduled for the next
-      # login and writes to both a normal log and the user journal.
       install -d -m 0755 \
           "$TARGET$USER_HOME/.local/bin" \
-          "$TARGET$USER_HOME/.config/autostart"
-      cat >"$TARGET$USER_HOME/.local/bin/ubuntu-rice-first-login" <<'RICE_FIRST_LOGIN'
+          "$TARGET$USER_HOME/.config/autostart" \
+          "$TARGET$USER_HOME/.local/state/ubuntuRicePack/autoinstall"
+
+      cat >"$TARGET$USER_HOME/.local/bin/ubuntu-rice-first-login" <<'FIRST_LOGIN'
       #!/usr/bin/env bash
       set -Eeuo pipefail
       IFS=$'\n\t'
       umask 022
 
-      RICE_DIR="$HOME/ubuntuRicePack"
-      STATE_DIR="$HOME/.local/state/ubuntuRicePack/autoinstall"
-      DONE_FILE="$STATE_DIR/first-login.complete"
-      LOG_FILE="$STATE_DIR/first-login.log"
-      AUTOSTART_FILE="$HOME/.config/autostart/ubuntu-rice-first-login.desktop"
+      readonly RICE_URL="https://github.com/ib-hussain/ubuntuRicePack.git"
+      readonly RICE_COMMIT="REPLACE_WITH_REPOSITORY_COMMIT"
+      readonly RICE_DIR="$HOME/ubuntuRicePack"
+      readonly STATE_DIR="$HOME/.local/state/ubuntuRicePack/autoinstall"
+      readonly DONE_FILE="$STATE_DIR/first-login.complete"
+      readonly LOG_FILE="$STATE_DIR/first-login.log"
+      readonly AUTOSTART_FILE="$HOME/.config/autostart/ubuntu-rice-first-login.desktop"
 
       mkdir -p -- "$STATE_DIR"
       exec 9>"$STATE_DIR/first-login.lock"
-      if ! flock -n 9; then
-          exit 0
-      fi
+      flock -n 9 || exit 0
 
       if [[ -e "$DONE_FILE" ]]; then
           rm -f -- "$AUTOSTART_FILE"
           exit 0
       fi
 
-      exec > >(tee -a "$LOG_FILE" >(systemd-cat -t ubuntu-rice-first-login)) 2>&1
+      if command -v systemd-cat >/dev/null 2>&1; then
+          exec > >(tee -a "$LOG_FILE" >(systemd-cat -t ubuntu-rice-first-login)) 2>&1
+      else
+          exec > >(tee -a "$LOG_FILE") 2>&1
+      fi
 
       finish() {
           local status="$?"
           trap - EXIT
           if ((status == 0)); then
               printf '\nUbuntuRicePack completed successfully.\n'
-              printf 'SSH is enabled. Verify it with: systemctl status ssh\n'
+              printf 'SSH status: systemctl status ssh\n'
           else
               printf '\nUbuntuRicePack failed with status %s.\n' "$status" >&2
               printf 'Log: %s\n' "$LOG_FILE" >&2
-              printf 'The first-login job remains enabled so it can be retried.\n' >&2
+              printf 'It will retry at the next login.\n' >&2
           fi
           read -r -p 'Press Enter to close this terminal...' _ || true
           exit "$status"
       }
       trap finish EXIT
 
-      printf 'UbuntuRicePack first-login setup started at %s\n' \
-          "$(date --iso-8601=seconds)"
-      printf 'Pinned revision: %s\n' \
-          "$(git -C "$RICE_DIR" rev-parse HEAD)"
+      if [[ -e "$RICE_DIR" && ! -d "$RICE_DIR/.git" ]]; then
+          printf 'Refusing to overwrite non-Git path: %s\n' "$RICE_DIR" >&2
+          exit 1
+      fi
+
+      mkdir -p -- "$RICE_DIR"
+      if [[ ! -d "$RICE_DIR/.git" ]]; then
+          git -C "$RICE_DIR" init
+          git -C "$RICE_DIR" remote add origin "$RICE_URL"
+      else
+          if [[ -n "$(git -C "$RICE_DIR" status --porcelain)" ]]; then
+              printf 'Refusing to replace a dirty checkout: %s\n' "$RICE_DIR" >&2
+              exit 1
+          fi
+          git -C "$RICE_DIR" remote set-url origin "$RICE_URL"
+      fi
+
+      fetched=0
+      for attempt in 1 2 3 4 5; do
+          if GIT_TERMINAL_PROMPT=0 git -C "$RICE_DIR" fetch \
+              --depth=1 \
+              --no-tags \
+              origin \
+              "$RICE_COMMIT"
+          then
+              fetched=1
+              break
+          fi
+          printf 'Fetch attempt %s failed; retrying.\n' "$attempt" >&2
+          sleep "$((attempt * 3))"
+      done
+      ((fetched == 1)) || {
+          printf 'Could not fetch pinned revision %s.\n' "$RICE_COMMIT" >&2
+          exit 1
+      }
+
+      git -C "$RICE_DIR" checkout --detach FETCH_HEAD
+      actual_commit="$(git -C "$RICE_DIR" rev-parse HEAD)"
+      [[ "$actual_commit" == "$RICE_COMMIT" ]] || {
+          printf 'Expected %s but checked out %s.\n' \
+              "$RICE_COMMIT" "$actual_commit" >&2
+          exit 1
+      }
 
       cd -- "$RICE_DIR"
-      RICE_PASSWORDLESS_SUDO=0 \
-          bash ./install-rice.sh --mode desktop --strict
+      RICE_PASSWORDLESS_SUDO=0 bash ./install-rice.sh -m desktop
 
       date --iso-8601=seconds >"$DONE_FILE"
       rm -f -- "$AUTOSTART_FILE"
-      RICE_FIRST_LOGIN
+      FIRST_LOGIN
       chmod 0755 "$TARGET$USER_HOME/.local/bin/ubuntu-rice-first-login"
 
-      cat >"$TARGET$USER_HOME/.config/autostart/ubuntu-rice-first-login.desktop" <<'RICE_AUTOSTART'
+      cat >"$TARGET$USER_HOME/.config/autostart/ubuntu-rice-first-login.desktop" <<'AUTOSTART'
       [Desktop Entry]
       Type=Application
       Version=1.0
       Name=Complete UbuntuRicePack Setup
-      Comment=Apply the pinned GNOME desktop configuration once
-      TryExec=gnome-terminal
-      Exec=gnome-terminal --wait -- /home/ibrahim/.local/bin/ubuntu-rice-first-login
-      Terminal=false
+      Comment=Fetch and apply the pinned desktop configuration
+      Exec=/home/ibrahim/.local/bin/ubuntu-rice-first-login
+      Terminal=true
       OnlyShowIn=GNOME;Unity;
       X-GNOME-Autostart-enabled=true
-      X-GNOME-Autostart-Delay=8
-      RICE_AUTOSTART
+      X-GNOME-Autostart-Delay=10
+      AUTOSTART
       chmod 0644 \
           "$TARGET$USER_HOME/.config/autostart/ubuntu-rice-first-login.desktop"
 
-      # Skip the generic GNOME first-run tour so it cannot obscure the visible
-      # terminal that performs the product setup.
       touch "$TARGET$USER_HOME/.config/gnome-initial-setup-done"
-
-      chroot "$TARGET" chown -R "$USER_NAME:$USER_NAME" \
-          "$RICE_DIR" \
+      curtin in-target --target="$TARGET" -- \
+          chown -R "$USER_NAME:$USER_NAME" \
           "$USER_HOME/.local" \
           "$USER_HOME/.config"
 
-      # Preserve an installer-side audit record in the installed system.
       install -d -m 0755 "$TARGET/var/log/installer"
-      printf 'repository=%s\ncommit=%s\nssh=enabled\nstorage=interactive\n' \
-          "$RICE_URL" "$RICE_COMMIT" \
-          >"$TARGET/var/log/installer/ubuntu-rice-bootstrap.txt"
+      cat >"$TARGET/var/log/installer/ubuntu-rice-bootstrap.txt" <<'AUDIT'
+      storage=interactive
+      network=interactive
+      ssh=enabled
+      rice_stage=deferred-to-first-login
+      rice_commit=REPLACE_WITH_REPOSITORY_COMMIT
+      AUDIT
 
   error-commands:
     - |
@@ -245,6 +225,9 @@ autoinstall:
           journalctl -b --no-pager \
               >/target/var/log/installer/ubuntu-rice-installer-error-journal.log \
               2>&1 || true
+          tar -C /var/log -czf \
+              /target/var/log/installer/ubuntu-rice-live-installer-logs.tar.gz \
+              installer 2>/dev/null || true
       fi
 
   shutdown: reboot

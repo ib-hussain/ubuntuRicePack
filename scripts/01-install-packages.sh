@@ -8,10 +8,13 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=00-common.sh
 source "$SCRIPT_DIR/00-common.sh"
 
+cp "$SCRIPT_DIR/../configs/.nanorc" ~/ 
+cp "$SCRIPT_DIR/../configs/.bashrc" ~/ 
+
 REMOVE_SNAP="${REMOVE_SNAP:-1}"
 INSTALL_GOOGLE_CHROME="${INSTALL_GOOGLE_CHROME:-1}"
 INSTALL_VSCODE="${INSTALL_VSCODE:-1}"
-INSTALL_VENTOY="${INSTALL_VENTOY:-1}"
+INSTALL_VENTOY="${INSTALL_VENTOY:-0}"
 STRICT_EXTERNALS="${STRICT_EXTERNALS:-0}"
 STRICT_PACKAGES="${STRICT_PACKAGES:-0}"
 INSTALL_MODE="${RICE_INSTALL_MODE:-auto}"
@@ -64,6 +67,61 @@ enable_ubuntu_components() {
             warn "Could not enable repository component '$component'; it may already be configured."
         fi
     done
+}
+
+remove_snap_stack() {
+    local package=""
+    local -a installed=()
+
+    [[ "$REMOVE_SNAP" == "1" ]] || {
+        log "No-Snap enforcement disabled by REMOVE_SNAP=$REMOVE_SNAP."
+        return 0
+    }
+    is_wsl_mode && return 0
+
+    log "Enforcing the repository's no-Snap/no-Firefox policy."
+    install_root_file /etc/apt/preferences.d/00-ubuntu-rice-no-snap 0644 <<'EOF_NO_SNAP'
+# Managed by ubuntuRicePack.
+Package: snapd firefox
+Pin: release *
+Pin-Priority: -10
+EOF_NO_SNAP
+
+    if have_systemd; then
+        run_root systemctl disable --now \
+            snapd.service \
+            snapd.socket \
+            snapd.seeded.service \
+            >/dev/null 2>&1 || true
+    fi
+
+    for package in \
+        firefox \
+        gnome-software-plugin-snap \
+        snap-store \
+        snapd
+    do
+        if apt_package_installed "$package"; then
+            installed+=("$package")
+        fi
+    done
+
+    if ((${#installed[@]} > 0)); then
+        apt_purge "${installed[@]}"
+        # Do not run autoremove from an unattended desktop configurator.
+        # Ubuntu marks many desktop dependencies as automatic; removing them
+        # immediately after a metapackage changes can strip unrelated parts of
+        # a working GNOME installation.
+    fi
+
+    # Holding absent packages is supported by dpkg selections and prevents a
+    # future metapackage transaction from silently restoring this stack.
+    run_root apt-mark hold snapd firefox >/dev/null
+
+    if apt_package_installed snapd || command -v snap >/dev/null 2>&1; then
+        fail "snapd remains installed after no-Snap enforcement."
+    fi
+    log "No-Snap/no-Firefox policy verified."
 }
 
 translate_package() {
@@ -449,6 +507,8 @@ EOF_VSCODE_PIN
 }
 
 install_vendor_apt_packages() {
+    local package=""
+    local failures=0
     local -a vendor_packages=()
 
     if [[ "$INSTALL_GOOGLE_CHROME" == "1" ]] &&
@@ -470,7 +530,22 @@ install_vendor_apt_packages() {
 
     apt_update
     log "Installing vendor APT packages: ${vendor_packages[*]}"
-    apt_install "${vendor_packages[@]}"
+    # Keep the independent Google and Microsoft repositories isolated. A
+    # temporary outage at one vendor must not prevent the other application
+    # from being installed.
+    for package in "${vendor_packages[@]}"; do
+        if ! apt_package_available "$package"; then
+            warn "Vendor package is unavailable after refreshing APT: $package"
+            failures=$((failures + 1))
+            continue
+        fi
+        if ! apt_install "$package"; then
+            warn "Vendor package installation failed: $package"
+            failures=$((failures + 1))
+        fi
+    done
+
+    ((failures == 0))
 }
 
 write_ventoy_launcher() {
@@ -774,15 +849,20 @@ main() {
 
     enable_ubuntu_components
     apt_update
-    # remove_snap_stack
+    remove_snap_stack
     apt_update
     install_repository_packages
 
-    configure_google_chrome_repository
-    configure_vscode_repository
+    run_external_installer \
+        "Google Chrome repository" \
+        configure_google_chrome_repository
+    run_external_installer \
+        "Visual Studio Code repository" \
+        configure_vscode_repository
     run_external_installer "Vendor APT packages" install_vendor_apt_packages
     run_external_installer "Ventoy" install_ventoy_upstream
     configure_docker
+    remove_snap_stack
     verify_external_installations
 
     log "Package installation stage complete."
@@ -794,4 +874,3 @@ main() {
 if [[ "${RICE_SOURCE_ONLY:-0}" != "1" ]]; then
     main "$@"
 fi
-

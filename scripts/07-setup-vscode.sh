@@ -15,14 +15,14 @@ command -v code >/dev/null 2>&1 ||
 
 VSCODE_SOURCE="$REPO_ROOT/configs/vscode"
 VSCODE_USER_SOURCE="$VSCODE_SOURCE/User"
-VSCODE_EXTENSIONS_SOURCE="$VSCODE_SOURCE/extensions"
 VSCODE_EXTENSION_LIST="$VSCODE_SOURCE/extensions.txt"
 VSCODE_USER_DEST="$HOME/.config/Code/User"
 VSCODE_EXTENSIONS_DEST="$HOME/.vscode/extensions"
-NAUTILUS_DEST="$HOME/.local/share/nautilus-python"
+NAUTILUS_DEST="$HOME/.local/share/nautilus-python/extensions"
 REPORT_DIR="$STATE_DIR/reports"
 REPORT_FILE="$REPORT_DIR/vscode-$RUN_ID.tsv"
 EXTENSION_REPORT="$REPORT_DIR/vscode-$RUN_ID-extensions.txt"
+EXTENSION_FAILURES=0
 
 log "Restoring Visual Studio Code and Nautilus integration."
 mkdir -p "$REPORT_DIR"
@@ -44,7 +44,25 @@ fi
 if [[ -d "$VSCODE_USER_SOURCE" ]]; then
     backup_path "$VSCODE_USER_DEST"
     mkdir -p "$VSCODE_USER_DEST"
-    rsync -a --delete "$VSCODE_USER_SOURCE/" "$VSCODE_USER_DEST/"
+
+    # Only portable user-authored configuration belongs here. globalStorage
+    # contains machine IDs, window state, and profile associations; replacing
+    # it with a capture from another OS can stop VS Code from starting.
+    for user_file in settings.json keybindings.json; do
+        if [[ -f "$VSCODE_USER_SOURCE/$user_file" ]]; then
+            copy_file \
+                "$VSCODE_USER_SOURCE/$user_file" \
+                "$VSCODE_USER_DEST/$user_file" \
+                0644
+        fi
+    done
+    for user_dir in snippets profiles; do
+        if [[ -d "$VSCODE_USER_SOURCE/$user_dir" ]]; then
+            copy_dir_contents \
+                "$VSCODE_USER_SOURCE/$user_dir" \
+                "$VSCODE_USER_DEST/$user_dir"
+        fi
+    done
     printf 'vscode-user\t%s\trestored\n' \
         "$VSCODE_USER_DEST" >>"$REPORT_FILE"
 else
@@ -53,27 +71,77 @@ else
         "$VSCODE_USER_SOURCE" >>"$REPORT_FILE"
 fi
 
-# Preserve the complete extension data requested by the user. The preferred
-# long-term representation is extensions.txt, but existing extension folders
-# are restored too so no repository-captured data is lost.
-if [[ -d "$VSCODE_EXTENSIONS_SOURCE" ]]; then
-    backup_path "$VSCODE_EXTENSIONS_DEST"
+sanitize_extension_state() {
+    local state_file=""
+
     mkdir -p "$VSCODE_EXTENSIONS_DEST"
-    rsync -a "$VSCODE_EXTENSIONS_SOURCE/" "$VSCODE_EXTENSIONS_DEST/"
-    printf 'vscode-extension-data\t%s\trestored\n' \
-        "$VSCODE_EXTENSIONS_DEST" >>"$REPORT_FILE"
-else
-    printf 'vscode-extension-data\t%s\tnot captured\n' \
-        "$VSCODE_EXTENSIONS_SOURCE" >>"$REPORT_FILE"
-fi
+    for state_file in \
+        "$VSCODE_EXTENSIONS_DEST/extensions.json" \
+        "$VSCODE_EXTENSIONS_DEST/extensions-list.json"
+    do
+        [[ -f "$state_file" ]] || continue
+
+        if python3 - "$state_file" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    raise SystemExit(0)
+
+if isinstance(data, dict) and "recommendations" in data:
+    raise SystemExit(0)
+
+if path.name == "extensions-list.json" and isinstance(data, list):
+    for item in data:
+        location = item.get("location", {}) if isinstance(item, dict) else {}
+        captured_path = str(location.get("path", "")).lower()
+        if captured_path.startswith("/c:/") or captured_path.startswith("c:/"):
+            raise SystemExit(0)
+
+raise SystemExit(1)
+PY
+        then
+            backup_path "$state_file"
+            rm -f -- "$state_file"
+            warn "Removed invalid cross-platform VS Code state: $state_file"
+        fi
+    done
+}
+
+sanitize_extension_state
 
 if [[ -f "$VSCODE_EXTENSION_LIST" ]]; then
+    installed_extensions="$(code --list-extensions 2>/dev/null || true)"
     while IFS= read -r extension_id || [[ -n "$extension_id" ]]; do
         extension_id="${extension_id//$'\r'/}"
+        extension_id="$(
+            printf '%s' "$extension_id" |
+                sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//'
+        )"
         [[ -n "$extension_id" && "$extension_id" != \#* ]] || continue
-        code --install-extension "$extension_id" --force ||
+
+        if [[ ! "$extension_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*\.[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+            warn "Invalid VS Code extension ID; skipped: $extension_id"
+            EXTENSION_FAILURES=$((EXTENSION_FAILURES + 1))
+            continue
+        fi
+        if grep -Fxi -- "$extension_id" <<<"$installed_extensions" >/dev/null; then
+            log "VS Code extension already installed: $extension_id"
+            continue
+        fi
+
+        if code --install-extension "$extension_id"; then
+            log "Installed VS Code extension: $extension_id"
+            installed_extensions+=$'\n'"$extension_id"
+        else
             warn "VS Code could not install extension: $extension_id"
-    done < "$VSCODE_EXTENSION_LIST"
+            EXTENSION_FAILURES=$((EXTENSION_FAILURES + 1))
+        fi
+    done <"$VSCODE_EXTENSION_LIST"
 fi
 
 git config --global user.name "Ibrahim Hussain"
@@ -99,4 +167,10 @@ fi
 
 log "VS Code verification report: $REPORT_FILE"
 log "VS Code extension inventory: $EXTENSION_REPORT"
+if ((EXTENSION_FAILURES > 0)); then
+    if [[ "${STRICT_VSCODE_EXTENSIONS:-0}" == "1" ]]; then
+        fail "$EXTENSION_FAILURES VS Code extension installation(s) failed."
+    fi
+    warn "$EXTENSION_FAILURES VS Code extension installation(s) failed."
+fi
 log "Visual Studio Code setup is complete."

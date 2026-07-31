@@ -19,7 +19,7 @@ For an already installed system:
 
 ```bash
 bash tests/validate-rice-product.sh
-./install-rice.sh --mode desktop
+bash ./install-rice.sh -m desktop
 ```
 
 Run as the normal logged-in GNOME user. Log out and back in when installation

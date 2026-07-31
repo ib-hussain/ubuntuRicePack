@@ -9,6 +9,48 @@ IFS=$'\n\t'
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export REPO_ROOT="$ROOT_DIR"
 
+usage() {
+    cat <<'USAGE'
+ubuntuRicePack installer
+
+Run this after Ubuntu itself is installed:
+  bash ./install-rice.sh
+
+Modes:
+  -m, --mode MODE    auto, desktop, normal, dual-boot, or wsl
+
+System options:
+  -H, --host NAME      Set the hostname (default: ibLaptop)
+  -K, --keep-host      Leave the existing hostname unchanged
+  -t, --tz ZONE        Set timezone (default: Asia/Karachi)
+  -l, --locale LOCALE  Set locale (default: en_US.UTF-8)
+  -p, --python VER     pyenv Python version (default: 3.12.7)
+  -r, --repair-pass    Back up and regenerate Ubuntu's packaged PAM stack,
+                       then run the password workflow
+  -s, --strict         Treat optional download and verification faults as fatal
+  -h, --help           Show this help
+
+Important:
+  - Run as the normal user, not with sudo.
+  - Desktop mode must run from a terminal inside a logged-in GNOME session.
+  - This does not repartition disks or install Ubuntu itself.
+  - Local AI is optional and separate:
+      bash scripts/10-setup-local-ai-ollama-openwebui.sh
+USAGE
+}
+
+# Help must work without creating logs, detecting a target user, or asking for
+# sudo. This is useful from recovery shells and when reviewing the USB media.
+for argument in "$@"; do
+    case "$argument" in
+        --help | -h)
+            usage
+            exit 0
+            ;;
+    esac
+done
+unset argument
+
 # shellcheck source=scripts/00-common.sh
 source "$ROOT_DIR/scripts/00-common.sh"
 # Give every child stage one run identifier, log, backup tree, and report set.
@@ -24,79 +66,41 @@ CONFIGURE_HOSTNAME="${RICE_CONFIGURE_HOSTNAME:-1}"
 INSTALL_PYENV="${RICE_INSTALL_PYENV:-1}"
 SET_SHORT_PASSWORD="${RICE_SET_SHORT_PASSWORD:-${RICE_ALLOW_SHORT_PASSWORDS:-0}}"
 REPAIR_PASSWORD_STACK="${RICE_REPAIR_PASSWORD_STACK:-0}"
-SKIP_PACKAGES=0
-SKIP_VSCODE=0
-SKIP_NERD_FONTS=0
-SKIP_VENTOY=1
 STRICT_MODE=0
-
-usage() {
-    cat <<'USAGE'
-ubuntuRicePack installer
-
-Run this after Ubuntu itself is installed:
-  ./install-rice.sh
-
-Modes:
-  --mode auto        Detect desktop Ubuntu or Ubuntu WSL (default)
-  --mode desktop     Ubuntu GNOME, including a normal or dual-boot installation
-  --mode normal      Alias for desktop
-  --mode dual-boot   Alias for desktop
-  --mode wsl         Ubuntu running inside Windows Subsystem for Linux
-
-System options:
-  --hostname NAME            Set the hostname (default: ibLaptop)
-  --keep-hostname            Leave the existing hostname unchanged
-  --timezone ZONE            Set timezone (default: Asia/Karachi)
-  --locale LOCALE            Set locale (default: en_US.UTF-8)
-  --python-version VERSION   pyenv Python version (default: 3.12.7)
-  --repair-password-stack    Back up and regenerate Ubuntu's packaged PAM
-                             stack, then run the password workflow
-  --strict                   Fail on unavailable packages, external installers,
-                             Nerd Fonts, GNOME mismatches, or final audit errors
-
-Important:
-  - Run as the normal user, not with sudo.
-  - Desktop mode must run from a terminal inside a logged-in GNOME session.
-  - This does not repartition disks or install Ubuntu itself.
-  - Local AI is optional and separate:
-      bash scripts/10-setup-local-ai-ollama-openwebui.sh
-USAGE
-}
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --mode)
+        -m | --mode)
             MODE="${2:?Missing value for --mode}"
             shift 2
             ;;
-        --hostname)
-            HOST_NAME="${2:?Missing value for --hostname}"
+        -H | --host | --hostname)
+            HOST_NAME="${2:?Missing value for --host}"
             CONFIGURE_HOSTNAME=1
             shift 2
             ;;
-        --keep-hostname)
+        -K | --keep-host | --keep-hostname)
             CONFIGURE_HOSTNAME=0
             shift
             ;;
-        --timezone)
-            TIMEZONE="${2:?Missing value for --timezone}"
+        -t | --tz | --timezone)
+            TIMEZONE="${2:?Missing value for --tz}"
             shift 2
             ;;
-        --locale)
+        -l | --locale)
             LOCALE_NAME="${2:?Missing value for --locale}"
             shift 2
             ;;
-        --python-version)
-            PYTHON_VERSION="${2:?Missing value for --python-version}"
+        -p | --python | --python-version)
+            PYTHON_VERSION="${2:?Missing value for --python}"
             shift 2
             ;;
-        --repair-password-stack)
+        -r | --repair-pass | --repair-password-stack)
             REPAIR_PASSWORD_STACK=1
             SET_SHORT_PASSWORD=1
             shift
             ;;
-        --strict)
+        -s | --strict)
             STRICT_MODE=1
             shift
             ;;
@@ -128,18 +132,16 @@ esac
 export RICE_INSTALL_MODE="$MODE"
 export RICE_PYTHON_VERSION="$PYTHON_VERSION"
 
-if [[ "$SKIP_NERD_FONTS" == "1" ]]; then
-    export INSTALL_NERD_FONTS=0
-fi
-if [[ "$SKIP_VENTOY" == "1" ]]; then
-    export INSTALL_VENTOY=0
-fi
+# Ventoy is unrelated to configuring an installed Ubuntu desktop and is off
+# unless an advanced user explicitly opts in through the environment.
+export INSTALL_VENTOY="${INSTALL_VENTOY:-0}"
 if [[ "$STRICT_MODE" == "1" ]]; then
     export STRICT_PACKAGES=1
     export STRICT_EXTERNALS=1
     export STRICT_NERD_FONTS=1
     export STRICT_GNOME_VERIFY=1
     export STRICT_FINAL_VERIFY=1
+    export STRICT_VSCODE_EXTENSIONS=1
 fi
 
 require_normal_user
@@ -271,9 +273,7 @@ configure_wsl
 
 run_root usermod -aG sudo "$USER"
 
-if [[ "$SKIP_PACKAGES" -eq 0 ]]; then
-    run_step 01-install-packages.sh --mode "$MODE"
-fi
+run_step 01-install-packages.sh --mode "$MODE"
 
 run_step 02-restore-themes-and-configs.sh --mode "$MODE"
 run_step 03-setup-terminal.sh
@@ -292,9 +292,7 @@ if [[ "$MODE" == "desktop" ]]; then
     run_step 04-setup-extensions.sh
     run_step 05-apply-gnome-settings.sh
     run_step 06-setup-assets-grub-wallpapers.sh
-    if [[ "$SKIP_VSCODE" -eq 0 ]]; then
-        run_step 07-setup-vscode.sh
-    fi
+    run_step 07-setup-vscode.sh
     run_step 08-finalize-desktop.sh
 else
     if ! is_systemd_running; then

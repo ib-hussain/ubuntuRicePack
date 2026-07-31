@@ -136,6 +136,26 @@ install_theme_assets() {
     fi
 }
 
+install_ptyxis_palette() {
+    local source="$REPO_ROOT/configs/ptyxis/IB-Glass.palette"
+    local destination="$TARGET_HOME/.local/share/org.gnome.Ptyxis/palettes/IB-Glass.palette"
+    local terminal_list_source="$REPO_ROOT/configs/ptyxis/ubuntu-xdg-terminals.list"
+    local terminal_list_destination="$TARGET_HOME/.config/ubuntu-xdg-terminals.list"
+
+    if [[ ! -f "$source" ]]; then
+        warn "Ptyxis palette source is absent: $source"
+        return 0
+    fi
+
+    backup_path "$destination"
+    copy_file "$source" "$destination" 0644
+    if [[ -f "$terminal_list_source" ]]; then
+        backup_path "$terminal_list_destination"
+        copy_file "$terminal_list_source" "$terminal_list_destination" 0644
+    fi
+    log "Installed the IB Glass Ptyxis palette."
+}
+
 restore_desktop_configuration() {
     local source=""
     local destination=""
@@ -165,9 +185,12 @@ restore_desktop_configuration() {
         "$TARGET_HOME/.local/bin/arch-rice-postlogin-runner"
 
     source="$REPO_ROOT/configs/nautilus-python"
-    destination="$TARGET_HOME/.local/share/nautilus-python"
+    destination="$TARGET_HOME/.local/share/nautilus-python/extensions"
     backup_path "$destination"
     copy_dir_contents "$source" "$destination"
+    find "$destination" -maxdepth 1 -type f -name '*.py' -exec chmod 0644 {} +
+
+    install_ptyxis_palette
 
     if [[ -f "$REPO_ROOT/configs/.face" ]]; then
         face_source="$REPO_ROOT/configs/.face"
@@ -221,7 +244,13 @@ write_restore_report() {
         report_path gtk4 "$TARGET_HOME/.config/gtk-4.0" yes
         report_path autostart "$TARGET_HOME/.config/autostart" no
         report_path nautilus-python \
-            "$TARGET_HOME/.local/share/nautilus-python" no
+            "$TARGET_HOME/.local/share/nautilus-python/extensions" yes
+        report_path ptyxis-palette \
+            "$TARGET_HOME/.local/share/org.gnome.Ptyxis/palettes/IB-Glass.palette" \
+            yes
+        report_path default-terminal \
+            "$TARGET_HOME/.config/ubuntu-xdg-terminals.list" \
+            yes
         report_path account-face "$TARGET_HOME/.face" no
     fi
 

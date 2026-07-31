@@ -104,41 +104,28 @@ EOF_FF_BLUE
     fi
 }
 
-release_asset_url() {
-    local release_json="$1"
-    local asset_name="$2"
-
-    python3 - "$release_json" "$asset_name" <<'PY_ASSET_URL'
-import json
-import sys
-
-with open(sys.argv[1], encoding="utf-8") as stream:
-    release = json.load(stream)
-
-for asset in release.get("assets", []):
-    if asset.get("name") == sys.argv[2]:
-        print(asset.get("browser_download_url", ""))
-        break
-PY_ASSET_URL
-}
-
 record_nerd_font_problem() {
     warn "$1"
     NERD_FONT_FAILURES=$((NERD_FONT_FAILURES + 1))
 }
 
 install_nerd_fonts() {
-    local release_json=""
     local checksums_file=""
-    local checksums_url=""
-    local tag=""
+    local checksums_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/SHA-256.txt"
+    local releases_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download"
     local font_name=""
     local asset_name=""
     local asset_url=""
     local archive=""
     local archive_listing=""
+    local cache_dir="$TARGET_HOME/.cache/ubuntuRicePack/nerd-fonts"
     local expected_sha=""
     local destination=""
+    local marker=""
+    local installed_sha=""
+    local extract_dir=""
+    local font_file=""
+    local cached_sha=""
     local -a font_families=()
 
     [[ "$INSTALL_NERD_FONTS" == "1" ]] || {
@@ -146,60 +133,25 @@ install_nerd_fonts() {
         return 0
     }
 
-    release_json="$(make_temp_file)"
     checksums_file="$(make_temp_file)"
-    register_temp_path "$release_json"
     register_temp_path "$checksums_file"
 
-    log "Resolving the latest official Nerd Fonts release."
+    # Use GitHub's release-download endpoint directly. Unlike the REST API,
+    # this is the upstream-supported scripted download path and is not subject
+    # to the low anonymous API quota that broke earlier installer runs.
+    log "Downloading the official Nerd Fonts SHA-256 manifest."
     if ! (
-        download_file \
-            https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest \
-            "$release_json"
+        download_file "$checksums_url" "$checksums_file"
     ); then
         record_nerd_font_problem \
-            "Could not download the official Nerd Fonts release metadata."
-        if [[ "$STRICT_NERD_FONTS" == "1" ]]; then
-            fail "Nerd Fonts metadata download failed."
-        fi
-        return 0
-    fi
-
-    tag="$(
-        python3 - "$release_json" <<'PY_RELEASE_TAG'
-import json
-import sys
-with open(sys.argv[1], encoding="utf-8") as stream:
-    print(json.load(stream).get("tag_name", ""))
-PY_RELEASE_TAG
-    )"
-    if [[ -z "$tag" ]]; then
-        record_nerd_font_problem \
-            "Could not determine the latest Nerd Fonts release tag."
-        if [[ "$STRICT_NERD_FONTS" == "1" ]]; then
-            fail "Nerd Fonts release metadata was incomplete."
-        fi
-        return 0
-    fi
-
-    checksums_url="$(release_asset_url "$release_json" SHA-256.txt)"
-    if [[ -z "$checksums_url" ]]; then
-        record_nerd_font_problem \
-            "The Nerd Fonts release does not contain SHA-256.txt."
-        if [[ "$STRICT_NERD_FONTS" == "1" ]]; then
-            fail "Nerd Fonts checksums are unavailable."
-        fi
-        return 0
-    fi
-    if ! (download_file "$checksums_url" "$checksums_file"); then
-        record_nerd_font_problem \
-            "Could not download the Nerd Fonts SHA-256 manifest."
+            "Could not download the official Nerd Fonts SHA-256 manifest."
         if [[ "$STRICT_NERD_FONTS" == "1" ]]; then
             fail "Nerd Fonts checksum download failed."
         fi
         return 0
     fi
 
+    mkdir -p -- "$cache_dir"
     IFS=' ' read -r -a font_families <<<"$RICE_NERD_FONTS"
     for font_name in "${font_families[@]}"; do
         [[ -n "$font_name" ]] || continue
@@ -209,36 +161,63 @@ PY_RELEASE_TAG
         fi
 
         asset_name="$font_name.tar.xz"
-        asset_url="$(release_asset_url "$release_json" "$asset_name")"
+        asset_url="$releases_url/$asset_name"
         expected_sha="$(
-            awk -v name="$asset_name" '$2 == name {print $1; exit}' "$checksums_file"
+            awk -v name="$asset_name" '
+                $2 == name {print $1; exit}
+                $1 == "SHA256" && $2 == "(" name ")" && $3 == "=" {
+                    print $4
+                    exit
+                }
+            ' "$checksums_file"
         )"
 
-        if [[ -z "$asset_url" || -z "$expected_sha" ]]; then
+        if [[ ! "$expected_sha" =~ ^[0-9a-fA-F]{64}$ ]]; then
             record_nerd_font_problem \
-                "Release $tag does not provide a verified $asset_name asset."
+                "The checksum manifest has no valid digest for $asset_name."
             continue
         fi
 
-        destination="$TARGET_HOME/.local/share/fonts/NerdFonts/$tag/$font_name"
-        if [[ -d "$destination" ]]; then
-            log "Nerd Font already installed: $font_name ($tag)"
+        destination="$TARGET_HOME/.local/share/fonts/NerdFonts/$font_name"
+        marker="$destination/.ubuntu-rice-sha256"
+        installed_sha=""
+        [[ -f "$marker" ]] && installed_sha="$(<"$marker")"
+        font_file="$(
+            find "$destination" -maxdepth 1 -type f \
+                \( -iname '*.ttf' -o -iname '*.otf' \) \
+                -print -quit 2>/dev/null
+        )"
+        if [[ "$installed_sha" == "$expected_sha" ]] &&
+            [[ -n "$font_file" ]]
+        then
+            log "Nerd Font is current: $font_name (${expected_sha:0:12})."
             continue
         fi
 
-        archive="$(make_temp_file)"
+        archive="$cache_dir/${expected_sha}-${asset_name}"
         archive_listing="$(make_temp_file)"
-        register_temp_path "$archive"
         register_temp_path "$archive_listing"
-        log "Downloading verified Nerd Font: $font_name ($tag)."
-        if ! (download_file "$asset_url" "$archive"); then
-            record_nerd_font_problem \
-                "Could not download Nerd Font archive: $asset_name"
-            continue
+
+        cached_sha=""
+        [[ -s "$archive" ]] &&
+            cached_sha="$(sha256sum "$archive" | awk '{print $1}')"
+        if [[ "$cached_sha" == "$expected_sha" ]]; then
+            log "Using cached Nerd Font archive: $asset_name"
+        else
+            rm -f -- "$archive"
+            log "Downloading verified Nerd Font: $font_name."
+            if ! (download_file "$asset_url" "$archive"); then
+                record_nerd_font_problem \
+                    "Could not download Nerd Font archive: $asset_name"
+                rm -f -- "$archive"
+                continue
+            fi
         fi
+
         if ! (verify_sha256 "$archive" "$expected_sha"); then
             record_nerd_font_problem \
                 "Checksum verification failed for Nerd Font: $asset_name"
+            rm -f -- "$archive"
             continue
         fi
 
@@ -253,13 +232,20 @@ PY_RELEASE_TAG
             continue
         fi
 
-        mkdir -p -- "$destination"
-        if ! tar -xJf "$archive" -C "$destination"; then
+        extract_dir="$(make_temp_dir)"
+        register_temp_path "$extract_dir"
+        if ! tar -xJf "$archive" -C "$extract_dir"; then
             record_nerd_font_problem \
                 "Could not extract Nerd Font archive: $asset_name"
             continue
         fi
-        log "Installed verified Nerd Font archive: $font_name ($tag)"
+
+        backup_path "$destination"
+        rm -rf -- "$destination"
+        mkdir -p -- "$(dirname -- "$destination")"
+        mv -- "$extract_dir" "$destination"
+        printf '%s\n' "$expected_sha" >"$marker"
+        log "Installed verified Nerd Font: $font_name (${expected_sha:0:12})."
     done
 
     if command -v fc-cache >/dev/null 2>&1; then

@@ -1141,7 +1141,7 @@ SETTINGS
 }
 
 apply_terminal_settings() {
-    log "Applying the IB Glass GNOME Terminal profile and terminal shortcuts."
+    log "Applying IB Glass to Ubuntu's Ptyxis terminal (with a GNOME Terminal fallback)."
 
     apply_table <<'SETTINGS'
 org.gnome.Terminal.Legacy.Settings|always-check-default-terminal|true
@@ -1231,10 +1231,67 @@ org.gnome.Terminal.Legacy.Keybindings|zoom-out|'<Control>minus'
 # Ubuntu's Ptyxis receives the portable parts of the same terminal design.
 org.gnome.Ptyxis|cursor-shape|'ibeam'
 org.gnome.Ptyxis|font-name|'Noto Sans Mono 12'
+org.gnome.Ptyxis|interface-style|'dark'
 org.gnome.Ptyxis|use-system-font|false
 org.gnome.Ptyxis|window-size|(uint32 110, uint32 28)
 SETTINGS
 
+    local ptyxis_profile_uuid=""
+    local ptyxis_profile_path=""
+    local ptyxis_profile_schema="org.gnome.Ptyxis.Profile"
+
+    if [[ -n "${FIXED_SCHEMAS[org.gnome.Ptyxis]+x}" ]]; then
+        ptyxis_profile_uuid="$(
+            gsettings get org.gnome.Ptyxis default-profile-uuid 2>/dev/null |
+                tr -d "'" || true
+        )"
+        if [[ -z "$ptyxis_profile_uuid" ]]; then
+            ptyxis_profile_uuid="fc74a141e2ae4f898a215b02e8cd73aa"
+            set_fixed \
+                org.gnome.Ptyxis \
+                profile-uuids \
+                "['$ptyxis_profile_uuid']"
+            set_fixed \
+                org.gnome.Ptyxis \
+                default-profile-uuid \
+                "'$ptyxis_profile_uuid'"
+        fi
+
+        ptyxis_profile_path="/org/gnome/Ptyxis/Profiles/$ptyxis_profile_uuid/"
+        set_relocatable \
+            "$ptyxis_profile_schema" \
+            "$ptyxis_profile_path" \
+            palette \
+            "'IB Glass'"
+        set_relocatable \
+            "$ptyxis_profile_schema" \
+            "$ptyxis_profile_path" \
+            label \
+            "'IB Glass Terminal'"
+        set_relocatable \
+            "$ptyxis_profile_schema" \
+            "$ptyxis_profile_path" \
+            opacity \
+            1.0
+    else
+        warn "Ptyxis schema is unavailable; its profile settings were skipped."
+        SKIPPED=$((SKIPPED + 1))
+    fi
+
+    # Ubuntu 25.04 and later use this list for Ctrl+Alt+T and
+    # xdg-terminal-exec. Ptyxis is first; GNOME Terminal remains a fallback.
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        log "[dry-run] Would select Ptyxis in ~/.config/ubuntu-xdg-terminals.list."
+    else
+        mkdir -p "$HOME/.config"
+        printf '%s\n' \
+            'org.gnome.Ptyxis.desktop:new-window' \
+            'org.gnome.Terminal.desktop' \
+            >"$HOME/.config/ubuntu-xdg-terminals.list"
+    fi
+
+    # Retain the source Arch GNOME Terminal profile for people who deliberately
+    # launch that fallback; it is no longer Ubuntu's primary terminal.
     local profile_uuid="fc74a141-e2ae-4f89-8a21-5b02e8cd73aa"
     local profile_path="/org/gnome/terminal/legacy/profiles:/:$profile_uuid/"
     local profile_schema="org.gnome.Terminal.Legacy.Profile"
@@ -1554,8 +1611,8 @@ apply_notifications_and_favorites() {
 
     desktop_id="$(
         first_desktop_id \
-            org.gnome.Terminal.desktop \
             org.gnome.Ptyxis.desktop \
+            org.gnome.Terminal.desktop \
             org.gnome.Console.desktop ||
             true
     )"

@@ -91,11 +91,11 @@
 
 <!-- ::: TITLES ::: -->
 <draw_ops name="title_focused">
-	<title version="< 3.1"
+	<title version="&lt; 3.1"
                x="(0 `max` ((width - title_width) / 2)) + 2"
                y="(0 `max` ((height - title_height) / 2)) + 1"
                color="C_title_focused_shadow" />
-	<title version="< 3.1"
+	<title version="&lt; 3.1"
                x="(0 `max` ((width - title_width) / 2)) + 2"
                y="(0 `max` ((height - title_height) / 2))"
                color="C_title_focused" />
@@ -112,11 +112,11 @@
 </draw_ops>
 
 <draw_ops name="title_unfocused">
-	<title version="< 3.1"
+	<title version="&lt; 3.1"
                x="(0 `max` ((width - title_width) / 2)) + 2"
                y="(0 `max` ((height - title_height) / 2)) + 1"
                color="C_title_unfocused_shadow" />
-	<title version="< 3.1"
+	<title version="&lt; 3.1"
                x="(0 `max` ((width - title_width) / 2)) + 2"
                y="(0 `max` ((height - title_height) / 2))"
                color="C_title_unfocused" />

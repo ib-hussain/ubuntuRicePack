@@ -55,6 +55,13 @@ done < <(
 )
 pass "all shell scripts parse"
 
+help_output="$(bash "$REPO_ROOT/install-rice.sh" --help)"
+grep -Fq -- '-m, --mode MODE' <<<"$help_output" ||
+    fail "installer help does not expose the shortened mode option"
+grep -Fq -- '-r, --repair-pass' <<<"$help_output" ||
+    fail "installer help does not expose the shortened PAM repair option"
+pass "installer help is side-effect-free and exposes the shortened options"
+
 awk \
     '/<<'\''ROTATOR'\''/{capture=1; next} /^ROTATOR$/{capture=0} capture' \
     "$REPO_ROOT/scripts/06-setup-assets-grub-wallpapers.sh" \
@@ -102,6 +109,9 @@ for uuid, directory in extensions.items():
 
 for path in list(root.rglob("*.xml")) + list(root.rglob("*.ui")):
     ET.parse(path)
+
+for path in root.glob("configs/nautilus-python/*.py"):
+    ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
 for path in root.glob("configs/**/*.css"):
     depth = 0
@@ -233,6 +243,99 @@ do
         fail "retired extension source remains: $retired"
 done
 pass "retired conflicting extension source is absent"
+
+NAUTILUS_SOURCE="$REPO_ROOT/configs/nautilus-python/ib_context_tools.py"
+for installer in \
+    "$REPO_ROOT/scripts/02-restore-themes-and-configs.sh" \
+    "$REPO_ROOT/scripts/07-setup-vscode.sh"
+do
+    grep -Fq '.local/share/nautilus-python/extensions' "$installer" ||
+        fail "$(basename "$installer") does not use Nautilus 4's extensions directory"
+done
+grep -Fq 'gi.require_version("Nautilus", "4.0")' "$NAUTILUS_SOURCE" ||
+    fail "Nautilus integration does not request the Nautilus 4 API"
+if grep -Eq '/usr/bin/code|GDK_BACKEND' "$NAUTILUS_SOURCE"; then
+    fail "Nautilus integration contains a host-specific VS Code launcher"
+fi
+pass "Nautilus 4 integration uses its supported extension directory and portable launcher"
+
+VSCODE_SETUP="$REPO_ROOT/scripts/07-setup-vscode.sh"
+if grep -Eq \
+    'copy_(file|dir_contents).*globalStorage|rsync[^#]*configs/vscode/extensions' \
+    "$VSCODE_SETUP"
+then
+    fail "VS Code setup still copies non-portable runtime state"
+fi
+grep -Fq 'code --install-extension' "$VSCODE_SETUP" ||
+    fail "VS Code extensions are not installed through the supported CLI"
+grep -Fq 'settings.json keybindings.json' "$VSCODE_SETUP" ||
+    fail "VS Code setup does not restore the portable user settings"
+if LC_ALL=C grep -q $'\r' "$REPO_ROOT/configs/vscode/extensions.txt"; then
+    fail "VS Code extension list contains CRLF line endings"
+fi
+pass "VS Code restore excludes captured machine state and uses the official CLI"
+
+for package in \
+    papirus-icon-theme \
+    python3-nautilus \
+    ptyxis \
+    xdg-terminal-exec \
+    audacious \
+    audacious-plugins
+do
+    grep -Fxq "$package" "$REPO_ROOT/packages/ubuntu-packages.txt" ||
+        fail "required Ubuntu package is absent from package inventory: $package"
+done
+grep -Fq 'remove_snap_stack' "$REPO_ROOT/scripts/01-install-packages.sh" ||
+    fail "package installer does not enforce the no-Snap policy"
+pass "Ubuntu package inventory covers Papirus, Nautilus, Ptyxis, and Audacious"
+
+grep -Fq \
+    'releases/latest/download/SHA-256.txt' \
+    "$REPO_ROOT/scripts/03-setup-terminal.sh" ||
+    fail "Nerd Fonts installer does not use the upstream checksum manifest"
+if grep -Fq \
+    'api.github.com/repos/ryanoasis/nerd-fonts' \
+    "$REPO_ROOT/scripts/03-setup-terminal.sh"
+then
+    fail "Nerd Fonts installer still depends on GitHub's anonymous REST quota"
+fi
+grep -Fq '.cache/ubuntuRicePack/nerd-fonts' \
+    "$REPO_ROOT/scripts/03-setup-terminal.sh" ||
+    fail "Nerd Fonts installer does not cache verified archives"
+pass "Nerd Fonts downloads are checksummed, cached, and independent of the REST API"
+
+for terminal_asset in \
+    "$REPO_ROOT/configs/ptyxis/IB-Glass.palette" \
+    "$REPO_ROOT/configs/ptyxis/ubuntu-xdg-terminals.list"
+do
+    [[ -s "$terminal_asset" ]] ||
+        fail "Ptyxis configuration asset is missing: $terminal_asset"
+done
+grep -Fq 'org.gnome.Ptyxis.Profile' \
+    "$REPO_ROOT/scripts/apply-ubuntu-gnome-best-settings.sh" ||
+    fail "GNOME settings stage does not configure the active Ptyxis profile"
+grep -Fq "org.gnome.Ptyxis|interface-style|'dark'" \
+    "$REPO_ROOT/scripts/apply-ubuntu-gnome-best-settings.sh" ||
+    fail "Ptyxis is not configured through its supported interface-style key"
+if grep -A35 -F 'ptyxis_profile_path=' \
+    "$REPO_ROOT/scripts/apply-ubuntu-gnome-best-settings.sh" |
+    grep -Fq 'dark-theme'
+then
+    fail "Ptyxis profile uses the unsupported dark-theme key"
+fi
+pass "Ubuntu's Ptyxis terminal has a palette, default-terminal entry, and profile settings"
+
+grep -Fq 'find "$WALLPAPER_DIR" -type f' \
+    "$REPO_ROOT/scripts/06-setup-assets-grub-wallpapers.sh" ||
+    fail "wallpaper cache check is missing"
+if grep -A8 -F 'wallpaper_images_exist()' \
+    "$REPO_ROOT/scripts/06-setup-assets-grub-wallpapers.sh" |
+    grep -Fq -- '-print0'
+then
+    fail "wallpaper existence check can still fail with SIGPIPE under pipefail"
+fi
+pass "wallpaper reruns use a pipefail-safe local cache check"
 
 bash "$REPO_ROOT/tests/validate-autoinstall.sh" \
     --template \
