@@ -3,6 +3,9 @@
 Rice Top Bar combines Hide Top Bar 126 with a deterministic transparent-panel
 controller for Ibrahim's GNOME rice.
 
+The bundled metadata and code path are validated for GNOME Shell 48 and 50 on
+Ubuntu, and for the same Shell versions on Arch Linux.
+
 The original Hide Top Bar extension only moves and hides the panel; it does not
 make the panel transparent. On Arch, transparency came from the MacTahoe Shell
 theme. Rice Top Bar keeps that CSS and also applies a reversible inline style to

@@ -14,6 +14,30 @@ autoinstall:
     - network
     - storage
 
+  # Subiquity selects the first mirror that contains the ISO's suite. Current
+  # Ubuntu 26.04 media uses the normal archive; end-of-life Ubuntu 25.04 media
+  # falls through to Ubuntu's official old-releases archive. This restores
+  # installability for Plucky but cannot restore security support.
+  apt:
+    preserve_sources_list: false
+    mirror-selection:
+      primary:
+        - country-mirror
+        - arches:
+            - amd64
+            - i386
+          uri: http://archive.ubuntu.com/ubuntu
+        - arches:
+            - arm64
+            - armhf
+            - ppc64el
+            - riscv64
+            - s390x
+          uri: http://ports.ubuntu.com/ubuntu-ports
+        - uri: http://old-releases.ubuntu.com/ubuntu
+    fallback: offline-install
+    geoip: true
+
   locale: en_US.UTF-8
   keyboard:
     layout: us

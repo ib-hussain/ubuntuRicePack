@@ -1,4 +1,4 @@
-# GNOME 50 extension engineering audit
+# GNOME 48/50 extension engineering audit
 
 ## Scope
 

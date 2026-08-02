@@ -17,6 +17,15 @@ COMMON_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${ROOT_DIR:-$(cd -- "$COMMON_SCRIPT_DIR/.." && pwd)}"
 export REPO_ROOT
 
+RELEASE_COMPAT_SCRIPT="$COMMON_SCRIPT_DIR/ubuntu-release-compat.sh"
+if [[ ! -r "$RELEASE_COMPAT_SCRIPT" ]]; then
+    printf 'Ubuntu release compatibility library is missing: %s\n' \
+        "$RELEASE_COMPAT_SCRIPT" >&2
+    exit 1
+fi
+# shellcheck source=ubuntu-release-compat.sh
+source "$RELEASE_COMPAT_SCRIPT"
+
 PROJECT_NAME="ubuntuRicePack"
 RUN_ID="${RICE_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
@@ -224,12 +233,17 @@ is_systemd_running() {
 require_ubuntu() {
     local distro_id=""
     local distro_like=""
+    local release_id=""
+    local release_codename=""
+    local release_profile=""
 
     [[ -r /etc/os-release ]] || fail "/etc/os-release is unavailable."
     # shellcheck disable=SC1091
     source /etc/os-release
     distro_id="${ID:-}"
     distro_like="${ID_LIKE:-}"
+    release_id="${VERSION_ID:-}"
+    release_codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
 
     if [[ "$distro_id" != "ubuntu" && " $distro_like " != *" ubuntu "* ]]; then
         if [[ "${ALLOW_UNSUPPORTED_DISTRO:-0}" == "1" ]]; then
@@ -239,7 +253,72 @@ require_ubuntu() {
         fi
     fi
 
-    log "Detected ${PRETTY_NAME:-Ubuntu} (${VERSION_CODENAME:-unknown codename})."
+    if release_profile="$(
+        ubuntu_release_profile "$release_id" "$release_codename"
+    )"; then
+        IFS=$'\t' read -r \
+            RICE_UBUNTU_VERSION \
+            RICE_UBUNTU_CODENAME \
+            RICE_EXPECTED_GNOME_MAJOR \
+            RICE_UBUNTU_SUPPORT_STATUS \
+            <<<"$release_profile"
+        export RICE_UBUNTU_VERSION RICE_UBUNTU_CODENAME
+        export RICE_EXPECTED_GNOME_MAJOR RICE_UBUNTU_SUPPORT_STATUS
+    elif [[ "${ALLOW_UNSUPPORTED_UBUNTU_RELEASE:-0}" == "1" ]]; then
+        RICE_UBUNTU_VERSION="$release_id"
+        RICE_UBUNTU_CODENAME="$release_codename"
+        RICE_EXPECTED_GNOME_MAJOR=""
+        RICE_UBUNTU_SUPPORT_STATUS="unsupported"
+        export RICE_UBUNTU_VERSION RICE_UBUNTU_CODENAME
+        export RICE_EXPECTED_GNOME_MAJOR RICE_UBUNTU_SUPPORT_STATUS
+        warn "Unsupported Ubuntu release allowed: $release_id ($release_codename)."
+    else
+        fail "Supported Ubuntu releases are 25.04 (Plucky/GNOME 48) and 26.04 (Resolute/GNOME 50); detected $release_id ($release_codename)."
+    fi
+
+    log "Detected ${PRETTY_NAME:-Ubuntu} ($release_codename; expected GNOME ${RICE_EXPECTED_GNOME_MAJOR:-unknown})."
+    if [[ "$RICE_UBUNTU_SUPPORT_STATUS" == "eol" ]]; then
+        warn "Ubuntu $RICE_UBUNTU_VERSION is end-of-life; archive compatibility does not restore security support."
+    fi
+}
+
+prepare_ubuntu_package_sources() {
+    local migration_output=""
+    local status=""
+    local detail=""
+
+    [[ "${RICE_UBUNTU_SUPPORT_STATUS:-}" == "eol" ]] || return 0
+    [[ "${RICE_UBUNTU_CODENAME:-}" == "plucky" ]] ||
+        fail "No archived-source migration is defined for ${RICE_UBUNTU_CODENAME:-unknown}."
+
+    warn "Using Ubuntu's signed old-releases archive for Plucky package access."
+    migration_output="$(
+        run_root bash "$RELEASE_COMPAT_SCRIPT" \
+            --rewrite-eol-sources \
+            /etc/apt \
+            "$RICE_UBUNTU_CODENAME"
+    )" || fail "Could not migrate Plucky APT sources to old-releases.ubuntu.com."
+
+    while IFS=$'\t' read -r status detail; do
+        [[ -n "$status" ]] || continue
+        case "$status" in
+            changed)
+                log "Migrated archived Ubuntu source: $detail"
+                ;;
+            unchanged)
+                log "$detail"
+                ;;
+            *)
+                warn "Unexpected archive-migration result: $status $detail"
+                ;;
+        esac
+    done <<<"$migration_output"
+}
+
+ubuntu_web_search_provider_expected() {
+    # Ubuntu introduced this GNOME Shell provider in 26.04. It must not be a
+    # required enabled extension on the GNOME 48 desktop shipped by 25.04.
+    [[ "${RICE_UBUNTU_VERSION:-}" == "26.04" ]]
 }
 
 require_command() {

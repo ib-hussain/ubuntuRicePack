@@ -16,6 +16,10 @@ ubuntuRicePack installer
 Run this after Ubuntu itself is installed:
   bash ./install-rice.sh
 
+Supported Ubuntu desktop profiles:
+  Ubuntu 25.04 (Plucky, GNOME 48; archived/EOL compatibility)
+  Ubuntu 26.04 (Resolute, GNOME 50)
+
 Modes:
   -m, --mode MODE    auto, desktop, normal, dual-boot, or wsl
 
@@ -267,6 +271,7 @@ run_step() {
 }
 
 configure_passwordless_sudo
+prepare_ubuntu_package_sources
 configure_locale_timezone
 configure_hostname_and_hosts
 configure_wsl

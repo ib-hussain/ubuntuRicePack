@@ -120,6 +120,49 @@ require(
     "an automated network recipe is forbidden",
 )
 
+apt_config = config.get("apt")
+require(isinstance(apt_config, dict), "apt mirror policy is required")
+require(
+    apt_config.get("preserve_sources_list") is False,
+    "APT sources must be generated from the selected compatible mirror",
+)
+mirror_selection = apt_config.get("mirror-selection")
+require(
+    isinstance(mirror_selection, dict),
+    "Subiquity mirror-selection configuration is required",
+)
+primary_mirrors = mirror_selection.get("primary")
+require(
+    isinstance(primary_mirrors, list) and primary_mirrors,
+    "APT primary mirror list must be non-empty",
+)
+mirror_uris = {
+    item.get("uri")
+    for item in primary_mirrors
+    if isinstance(item, dict) and isinstance(item.get("uri"), str)
+}
+require(
+    "country-mirror" in primary_mirrors,
+    "country-mirror must remain the preferred installer mirror",
+)
+require(
+    "http://archive.ubuntu.com/ubuntu" in mirror_uris,
+    "current Ubuntu archive fallback is missing",
+)
+require(
+    "http://ports.ubuntu.com/ubuntu-ports" in mirror_uris,
+    "Ubuntu ports fallback is missing",
+)
+require(
+    "http://old-releases.ubuntu.com/ubuntu" in mirror_uris,
+    "Ubuntu 25.04 old-releases fallback is missing",
+)
+require(
+    apt_config.get("fallback") == "offline-install",
+    "APT mirror failure must fall back to the ISO package pool",
+)
+require(apt_config.get("geoip") is True, "APT mirror geoip must be enabled")
+
 require(config.get("locale") == "en_US.UTF-8", "locale mismatch")
 require(config.get("timezone") == "Asia/Karachi", "timezone mismatch")
 keyboard = config.get("keyboard")
@@ -262,8 +305,9 @@ late_command_file.write_text(
 )
 
 print(
-    "PASS: schema shape, interactive storage/network, identity, SSH, "
-    "minimal late phase, pinned first-login bootstrap, and diagnostics validate"
+    "PASS: schema shape, compatible mirrors, interactive storage/network, "
+    "identity, SSH, minimal late phase, pinned first-login bootstrap, and "
+    "diagnostics validate"
 )
 PY
 

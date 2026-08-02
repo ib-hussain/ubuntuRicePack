@@ -13,7 +13,7 @@ FINAL_FAILURES=0
 FINAL_WARNINGS=0
 REPORT_FILE=""
 
-readonly -a REQUIRED_ENABLED_EXTENSIONS=(
+declare -a REQUIRED_ENABLED_EXTENSIONS=(
     "rice-dock@ib-hussain"
     "rice-top-bar@ib-hussain"
     "start-overlay-in-application-view@Hex_cz"
@@ -23,10 +23,9 @@ readonly -a REQUIRED_ENABLED_EXTENSIONS=(
     "user-theme@gnome-shell-extensions.gcampax.github.com"
     "ding@rastersoft.com"
     "ubuntu-appindicators@ubuntu.com"
-    "web-search-provider@ubuntu.com"
 )
 
-readonly -a REQUIRED_DISABLED_EXTENSIONS=(
+declare -a REQUIRED_DISABLED_EXTENSIONS=(
     "arch-dock-icon@ib-hussain"
     "hidetopbar@mathieu.bidon.ca"
     "dash-to-dock@micxgx.gmail.com"
@@ -38,6 +37,14 @@ readonly -a REQUIRED_DISABLED_EXTENSIONS=(
 
 DESKTOP_DIR=""
 APPLICATION_DIR="$TARGET_HOME/.local/share/applications"
+
+configure_release_specific_verification() {
+    if ubuntu_web_search_provider_expected; then
+        REQUIRED_ENABLED_EXTENSIONS+=("web-search-provider@ubuntu.com")
+    else
+        REQUIRED_DISABLED_EXTENSIONS+=("web-search-provider@ubuntu.com")
+    fi
+}
 
 report_line() {
     local category="$1"
@@ -238,6 +245,32 @@ verify_package() {
     else
         record_failure package "$package_name" installed "${status:-not installed}"
     fi
+}
+
+verify_release_specific_packages() {
+    case "$RICE_UBUNTU_VERSION" in
+        25.04)
+            # Plucky ships VLC 3.0.21, whose Ubuntu binary set has no separate
+            # PipeWire plugin package. The remaining requested VLC plugins are
+            # still verified individually below.
+            report_line \
+                package \
+                vlc-plugin-pipewire \
+                "not packaged on Ubuntu 25.04" \
+                "not applicable" \
+                SKIP
+            ;;
+        26.04)
+            verify_package vlc-plugin-pipewire
+            ;;
+        *)
+            record_failure \
+                package \
+                vlc-plugin-pipewire \
+                "known release policy" \
+                "$RICE_UBUNTU_VERSION"
+            ;;
+    esac
 }
 
 verify_desktop_launcher() {
@@ -760,7 +793,6 @@ write_final_report() {
         vlc-plugin-fluidsynth \
         vlc-plugin-jack \
         vlc-plugin-notify \
-        vlc-plugin-pipewire \
         vlc-plugin-qt \
         vlc-plugin-samba \
         vlc-plugin-skins2 \
@@ -772,6 +804,7 @@ write_final_report() {
     do
         verify_package "$uuid"
     done
+    verify_release_specific_packages
 
     verify_desktop_launcher \
         "Google Chrome" \
@@ -866,6 +899,7 @@ write_final_report() {
 main() {
     require_gnome_session
     require_ubuntu
+    configure_release_specific_verification
 
     DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || true)"
     DESKTOP_DIR="${DESKTOP_DIR:-$TARGET_HOME/Desktop}"

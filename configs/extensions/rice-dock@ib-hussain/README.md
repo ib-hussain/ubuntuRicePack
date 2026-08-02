@@ -2,7 +2,7 @@
 
 Rice Dock is Ibrahim Hussain's cross-distribution GNOME dock. It is based on
 Ubuntu Dock / Dash-to-Dock 106 and is intended to run unchanged on Ubuntu and
-Arch Linux with GNOME Shell 50.
+Arch Linux with GNOME Shell 48 or 50.
 
 ## Rice-specific behavior
 

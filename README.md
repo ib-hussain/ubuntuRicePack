@@ -1,7 +1,12 @@
 # UbuntuRicePack
 
-Ibrahim Hussain's reproducible Ubuntu GNOME 50 desktop configuration, with a
-cross-distribution Rice Dock and Rice Top Bar that also run on Arch GNOME 50.
+Ibrahim Hussain's reproducible Ubuntu desktop configuration for Ubuntu 25.04
+(GNOME 48) and Ubuntu 26.04 (GNOME 50), with cross-distribution Rice Dock and
+Rice Top Bar extensions that also run on Arch GNOME 48/50.
+
+Ubuntu 25.04 reached end of life. The installer can use Ubuntu's official
+old-releases archive so Plucky remains installable, but that cannot restore
+security updates. Ubuntu 26.04 is the recommended profile.
 
 ## Quick start
 

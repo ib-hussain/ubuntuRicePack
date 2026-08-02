@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply and verify Ibrahim's curated Ubuntu GNOME 50 configuration.
+# Apply and verify Ibrahim's curated Ubuntu GNOME 48/50 configuration.
 #
 # The large, schema-aware settings importer is the single source of truth.
 # This stage deliberately does not run `dconf load /`.
@@ -15,7 +15,7 @@ readonly BEST_SETTINGS_SCRIPT="$SCRIPT_DIR/apply-ubuntu-gnome-best-settings.sh"
 readonly THEME_NAME="MacTahoe-Dark-blue"
 readonly ICON_THEME_NAME="Papirus-Dark"
 
-readonly -a REQUIRED_ENABLED_EXTENSIONS=(
+declare -a REQUIRED_ENABLED_EXTENSIONS=(
     "rice-dock@ib-hussain"
     "rice-top-bar@ib-hussain"
     "start-overlay-in-application-view@Hex_cz"
@@ -25,10 +25,9 @@ readonly -a REQUIRED_ENABLED_EXTENSIONS=(
     "user-theme@gnome-shell-extensions.gcampax.github.com"
     "ding@rastersoft.com"
     "ubuntu-appindicators@ubuntu.com"
-    "web-search-provider@ubuntu.com"
 )
 
-readonly -a REQUIRED_DISABLED_EXTENSIONS=(
+declare -a REQUIRED_DISABLED_EXTENSIONS=(
     "arch-dock-icon@ib-hussain"
     "hidetopbar@mathieu.bidon.ca"
     "apps-menu@gnome-shell-extensions.gcampax.github.com"
@@ -51,6 +50,14 @@ readonly -a REQUIRED_DISABLED_EXTENSIONS=(
 VERIFY_FAILURES=0
 DRY_RUN_REQUESTED=0
 REPORT_FILE=""
+
+configure_release_specific_verification() {
+    if ubuntu_web_search_provider_expected; then
+        REQUIRED_ENABLED_EXTENSIONS+=("web-search-provider@ubuntu.com")
+    else
+        REQUIRED_DISABLED_EXTENSIONS+=("web-search-provider@ubuntu.com")
+    fi
+}
 
 extension_present() {
     local uuid="$1"
@@ -391,6 +398,8 @@ main() {
     require_command dconf
     require_command gnome-extensions
     require_command gsettings
+
+    configure_release_specific_verification
 
     [[ -f "$BEST_SETTINGS_SCRIPT" ]] ||
         fail "Missing curated settings importer: $BEST_SETTINGS_SCRIPT"

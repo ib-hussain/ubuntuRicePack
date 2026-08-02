@@ -1,10 +1,10 @@
 # ubuntuRicePack WSL packages
-# Target: Ubuntu 26.04 LTS (Resolute) under WSL 2
+# Targets: Ubuntu 25.04 (Plucky) and Ubuntu 26.04 LTS (Resolute) under WSL 2
 # Translated from the Arch WSL pacman inventory on 2026-07-24.
 #
-# Every uncommented line is an APT package verified in the official Ubuntu
-# Resolute package index. The installer should ignore blank lines and lines
-# beginning with '#'.
+# This is a release-spanning superset. The installer checks the active APT
+# index and installs only packages available for the detected release. It
+# ignores blank lines and lines beginning with '#'.
 #
 # Required Ubuntu components: main, universe, multiverse.
 # Policy: CLI-focused, no Snap packages.

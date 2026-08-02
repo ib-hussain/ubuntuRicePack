@@ -3,7 +3,7 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 ###############################################################################
-# Ibrahim's GNOME 50 "best settings" importer — Ubuntu edition
+# Ibrahim's GNOME settings importer — Ubuntu GNOME 48/50 edition
 #
 # Source snapshot:
 #   Arch Linux, GNOME Shell 50.2, exported 2026-07-24.
@@ -41,6 +41,7 @@ DRY_RUN=0
 MAKE_BACKUP=1
 APPLY_EXTENSIONS=1
 FORCE_PLATFORM=0
+UBUNTU_RELEASE_VERSION=""
 
 APPLIED=0
 UNCHANGED=0
@@ -140,6 +141,7 @@ validate_environment() {
         source /etc/os-release
         distro_id="${ID:-}"
         distro_like="${ID_LIKE:-}"
+        UBUNTU_RELEASE_VERSION="${VERSION_ID:-}"
     fi
 
     case "$TARGET_PLATFORM" in
@@ -165,8 +167,12 @@ validate_environment() {
         local shell_version=""
         shell_version="$(gnome-shell --version 2>/dev/null || true)"
         log "Detected ${shell_version:-GNOME Shell}"
-        if [[ "$shell_version" != *" 50."* ]]; then
-            warn "The source snapshot was GNOME 50. Unsupported keys will be skipped."
+        if [[ "$shell_version" != *" 48."* &&
+            "$shell_version" != *" 50."* ]]
+        then
+            warn "This importer is validated on GNOME 48 and 50. Unsupported keys will be skipped."
+        elif [[ "$shell_version" == *" 48."* ]]; then
+            log "Adapting the GNOME 50 source snapshot to GNOME 48 through schema-aware writes."
         fi
     fi
 }
@@ -1812,7 +1818,11 @@ apply_extension_states() {
         # Ubuntu's Tiling Assistant overrides those exact settings.
         set_extension_state tiling-assistant@ubuntu.com disable
         set_extension_state ubuntu-appindicators@ubuntu.com enable
-        set_extension_state web-search-provider@ubuntu.com enable
+        if [[ "$UBUNTU_RELEASE_VERSION" == "26.04" ]]; then
+            set_extension_state web-search-provider@ubuntu.com enable
+        else
+            set_extension_state web-search-provider@ubuntu.com disable
+        fi
 
         # The Ubuntu build is intentionally Snap-free.
         set_extension_state snapd-prompting@canonical.com disable
@@ -1877,7 +1887,7 @@ main() {
     load_schema_cache
     backup_current_settings
 
-    log "Applying Ibrahim's GNOME 50 snapshot for $TARGET_PLATFORM."
+    log "Applying Ibrahim's schema-aware GNOME 48/50 snapshot for $TARGET_PLATFORM."
 
     apply_core_desktop_settings
     apply_window_and_shell_keybindings

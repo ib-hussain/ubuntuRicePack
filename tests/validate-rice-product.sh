@@ -113,8 +113,13 @@ for uuid, directory in extensions.items():
     )
     if metadata.get("uuid") != uuid:
         raise SystemExit(f"{directory}: metadata UUID mismatch")
-    if "50" not in {str(value) for value in metadata.get("shell-version", [])}:
-        raise SystemExit(f"{uuid}: GNOME Shell 50 is not declared")
+    versions = {str(value) for value in metadata.get("shell-version", [])}
+    missing = {"48", "50"} - versions
+    if missing:
+        raise SystemExit(
+            f"{uuid}: GNOME Shell versions are not declared: "
+            f"{', '.join(sorted(missing))}"
+        )
 
 for path in list(root.rglob("*.xml")) + list(root.rglob("*.ui")):
     ET.parse(path)
@@ -360,6 +365,9 @@ then
     fail "wallpaper existence check can still fail with SIGPIPE under pipefail"
 fi
 pass "wallpaper reruns use a pipefail-safe local cache check"
+
+bash "$REPO_ROOT/tests/validate-release-compat.sh"
+pass "Ubuntu 25.04/26.04 release compatibility validates"
 
 bash "$REPO_ROOT/tests/validate-autoinstall.sh" \
     --template \

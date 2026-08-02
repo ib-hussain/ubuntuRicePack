@@ -10,7 +10,14 @@ It checks shell syntax, generated helper scripts, theme XML/UI files, Nautilus
 Python syntax and location, portable VS Code restoration, required Ubuntu
 packages, verified/cached Nerd Fonts, Ptyxis configuration, wallpaper caching,
 GNOME extension metadata and schemas, the dock logo invariant, top-bar
-transparency, and the autoinstall template.
+transparency, Ubuntu 25.04/26.04 release profiles, safe/idempotent Plucky APT
+archive migration, and the autoinstall template.
+
+Run the release compatibility regression independently with:
+
+```bash
+bash tests/validate-release-compat.sh
+```
 
 Validate a private generated autoinstall file separately:
 

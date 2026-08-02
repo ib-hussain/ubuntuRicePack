@@ -17,7 +17,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=00-common.sh
 source "$SCRIPT_DIR/00-common.sh"
 
-readonly EXPECTED_GNOME_MAJOR="${RICE_GNOME_MAJOR:-50}"
 readonly EXTENSION_SOURCE="$REPO_ROOT/configs/extensions"
 readonly EXTENSION_LIST="$EXTENSION_SOURCE/extension-list.txt"
 readonly EXTENSION_DEST="$TARGET_HOME/.local/share/gnome-shell/extensions"
@@ -82,13 +81,12 @@ readonly -a DISABLED_SNAPSHOT_UUIDS=(
     "workspace-indicator@gnome-shell-extensions.gcampax.github.com"
 )
 
-readonly -a ACTIVE_UBUNTU_UUIDS=(
+readonly -a SHARED_ACTIVE_UBUNTU_UUIDS=(
     "ding@rastersoft.com"
     "ubuntu-appindicators@ubuntu.com"
-    "web-search-provider@ubuntu.com"
 )
 
-readonly -a DISABLED_UBUNTU_UUIDS=(
+readonly -a BASE_DISABLED_UBUNTU_UUIDS=(
     "$RETIRED_ICON_UUID"
     "$HIDE_TOP_BAR_UUID"
     "$DASH_TO_DOCK_UUID"
@@ -100,6 +98,8 @@ readonly -a DISABLED_UBUNTU_UUIDS=(
 
 declare -a MANIFEST_UUIDS=()
 declare -a INSTALL_FAILURES=()
+declare -a ACTIVE_UBUNTU_UUIDS=()
+declare -a DISABLED_UBUNTU_UUIDS=()
 STATE_ONLY=0
 
 usage() {
@@ -144,6 +144,26 @@ array_contains() {
         [[ "$candidate" == "$needle" ]] && return 0
     done
     return 1
+}
+
+configure_release_specific_extension_policy() {
+    ACTIVE_UBUNTU_UUIDS=("${SHARED_ACTIVE_UBUNTU_UUIDS[@]}")
+    DISABLED_UBUNTU_UUIDS=("${BASE_DISABLED_UBUNTU_UUIDS[@]}")
+
+    case "$RICE_UBUNTU_VERSION" in
+        25.04)
+            # Ubuntu added this provider in 26.04. Keep a stray newer copy
+            # disabled rather than failing because Plucky does not ship it.
+            DISABLED_UBUNTU_UUIDS+=("web-search-provider@ubuntu.com")
+            log "Ubuntu 25.04 profile: web-search-provider is not required."
+            ;;
+        26.04)
+            ACTIVE_UBUNTU_UUIDS+=("web-search-provider@ubuntu.com")
+            ;;
+        *)
+            fail "No Ubuntu-native extension policy exists for $RICE_UBUNTU_VERSION."
+            ;;
+    esac
 }
 
 detect_gnome_major() {
@@ -779,6 +799,7 @@ PY_UBUNTU_VERSION
 
 main() {
     local shell_major=""
+    local expected_shell_major=""
 
     require_user_session
     require_ubuntu
@@ -788,13 +809,18 @@ main() {
     assert_repo_path "configs/extensions/$RICE_TOP_BAR_UUID"
 
     shell_major="$(detect_gnome_major)"
-    if [[ "$shell_major" != "$EXPECTED_GNOME_MAJOR" &&
+    expected_shell_major="${RICE_GNOME_MAJOR:-${RICE_EXPECTED_GNOME_MAJOR:-}}"
+    [[ -n "$expected_shell_major" ]] ||
+        fail "No GNOME compatibility profile is defined for this Ubuntu release."
+
+    if [[ "$shell_major" != "$expected_shell_major" &&
         "${ALLOW_UNSUPPORTED_GNOME:-0}" != "1" ]]
     then
-        fail "This configuration targets GNOME $EXPECTED_GNOME_MAJOR; detected GNOME $shell_major."
+        fail "Ubuntu $RICE_UBUNTU_VERSION expects GNOME $expected_shell_major; detected GNOME $shell_major."
     fi
 
-    log "Preparing the Ubuntu GNOME $shell_major extension set."
+    log "Preparing the Ubuntu $RICE_UBUNTU_VERSION GNOME $shell_major extension set."
+    configure_release_specific_extension_policy
     load_and_validate_manifest
 
     if [[ "$STATE_ONLY" == "0" ]]; then

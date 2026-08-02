@@ -8,9 +8,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=00-common.sh
 source "$SCRIPT_DIR/00-common.sh"
 
-cp "$SCRIPT_DIR/../configs/.nanorc" ~/ 
-cp "$SCRIPT_DIR/../configs/.bashrc" ~/ 
-
 REMOVE_SNAP="${REMOVE_SNAP:-1}"
 INSTALL_GOOGLE_CHROME="${INSTALL_GOOGLE_CHROME:-1}"
 INSTALL_VSCODE="${INSTALL_VSCODE:-1}"
@@ -834,6 +831,11 @@ main() {
         log "Desktop Ubuntu detected; using $PACKAGE_FILE."
     fi
 
+    # Ubuntu 25.04 is archived. Repair only official Plucky Ubuntu source
+    # URIs before the first metadata refresh; third-party sources are left
+    # untouched. On Ubuntu 26.04 this is an intentional no-op.
+    prepare_ubuntu_package_sources
+
     # Bootstrap only what this script itself needs.
     apt_update
     apt_install \
@@ -848,6 +850,9 @@ main() {
         xz-utils
 
     enable_ubuntu_components
+    # add-apt-repository can rewrite an official Plucky source URI, so enforce
+    # the archive mapping once more before refreshing enabled components.
+    prepare_ubuntu_package_sources
     apt_update
     remove_snap_stack
     apt_update

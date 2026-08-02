@@ -34,6 +34,10 @@ archive to install OpenSSH Server and the requested updates, drivers, and
 codecs. The rice repository itself is no longer downloaded inside Subiquity's
 fatal late-command phase; it is fetched with retries after the first login.
 
+The template supports Ubuntu 26.04 through the normal archive and can fall
+back to `old-releases.ubuntu.com` for an Ubuntu 25.04 ISO. Plucky is end of
+life; this fallback restores package access, not security maintenance.
+
 At the storage page, make the real-machine decision yourself: erase the
 selected disk, install alongside another operating system, or use manual
 partitioning. The YAML contains no disk match, wipe, partition, filesystem, or
@@ -81,7 +85,7 @@ state, or the USB media rather than a rice script modifying the ISO.
 - `rice-top-bar@ib-hussain` combines current Hide Top Bar behavior with an
   explicit, reversible transparent-panel controller.
 - Both custom extensions contain reviewed source in this repository. The same
-  extension source works on Ubuntu and Arch GNOME 50.
+  extension source works on Ubuntu and Arch GNOME 48/50.
 - Ubuntu Dock, Dash-to-Dock, the old Arch icon patch, and the old Hide Top Bar
   UUID are disabled to prevent competing actors or styles.
 - Password resetting uses a separate privileged interactive helper. It does
@@ -136,7 +140,7 @@ already strict for genuine failures.
 ## Apply only Rice Dock and Rice Top Bar
 
 This command is intentionally package-manager-independent and works from this
-repository on either Ubuntu or Arch GNOME 50:
+repository on either Ubuntu or Arch GNOME 48/50:
 
 ```bash
 bash scripts/install-rice-shell-extensions.sh
@@ -144,7 +148,7 @@ bash scripts/install-rice-shell-extensions.sh
 
 It:
 
-1. validates both extension sources and GNOME Shell 50 compatibility;
+1. validates both extension sources against the running GNOME Shell version;
 2. backs up previous installations;
 3. installs and strictly compiles schemas;
 4. disables the four conflicting dock/top-bar UUIDs;

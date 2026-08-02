@@ -18,7 +18,7 @@ RUN_ID="$(date +%Y%m%d-%H%M%S)-$$"
 BACKUP_ROOT="$STATE_ROOT/backups/$RUN_ID"
 REPORT_ROOT="$STATE_ROOT/reports"
 LOG_FILE="$STATE_ROOT/install-$RUN_ID.log"
-EXPECTED_GNOME_MAJOR="${RICE_GNOME_MAJOR:-50}"
+REQUESTED_GNOME_MAJOR="${RICE_GNOME_MAJOR:-}"
 STATE_ONLY=0
 ENABLE_EXTENSIONS=1
 FAILURES=0
@@ -44,8 +44,8 @@ Options:
   --install-only  Copy and compile the extensions without changing states
   --help          Show this help
 
-Run this as the logged-in GNOME user, never with sudo. The same command works
-on Ubuntu and Arch Linux with GNOME Shell 50.
+Run this as the logged-in GNOME user, never with sudo. Compatibility is read
+from each extension's metadata; the bundled extensions support GNOME 48 and 50.
 USAGE
 }
 
@@ -127,9 +127,10 @@ detect_gnome_major() {
 
 validate_source() {
     local uuid="$1"
+    local shell_major="$2"
     local metadata="$SOURCE_ROOT/$uuid/metadata.json"
 
-    python3 - "$metadata" "$uuid" "$EXPECTED_GNOME_MAJOR" <<'PY'
+    python3 - "$metadata" "$uuid" "$shell_major" <<'PY'
 import json
 from pathlib import Path
 import sys
@@ -153,11 +154,12 @@ PY
 
 install_extension() {
     local uuid="$1"
+    local shell_major="$2"
     local source="$SOURCE_ROOT/$uuid"
     local destination="$DEST_ROOT/$uuid"
 
     [[ -d "$source" ]] || fail "Extension source is missing: $source"
-    validate_source "$uuid" ||
+    validate_source "$uuid" "$shell_major" ||
         fail "Extension source validation failed for $uuid."
 
     if [[ -e "$destination" || -L "$destination" ]]; then
@@ -308,14 +310,17 @@ main() {
     require_command rsync
 
     shell_major="$(detect_gnome_major)"
-    [[ "$shell_major" == "$EXPECTED_GNOME_MAJOR" ]] ||
-        fail "Rice Shell targets GNOME $EXPECTED_GNOME_MAJOR; found $shell_major."
+    if [[ -n "$REQUESTED_GNOME_MAJOR" &&
+        "$shell_major" != "$REQUESTED_GNOME_MAJOR" ]]
+    then
+        fail "RICE_GNOME_MAJOR requests GNOME $REQUESTED_GNOME_MAJOR; found $shell_major."
+    fi
 
-    log "Starting cross-distribution Rice Shell installation."
+    log "Starting cross-distribution Rice Shell installation for GNOME $shell_major."
     if [[ "$STATE_ONLY" == "0" ]]; then
         mkdir -p -- "$DEST_ROOT"
         for uuid in "${RICE_UUIDS[@]}"; do
-            install_extension "$uuid"
+            install_extension "$uuid" "$shell_major"
         done
     else
         log "State-only mode: source copying was skipped."
