@@ -5,28 +5,169 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+    cat <<'USAGE'
+Usage: 07-setup-vscode.sh [options]
+
+Options:
+  --repair-profile  Back up and rebuild VS Code's Linux user-data profile
+  --stop-running    Gracefully stop this user's Code processes before repair
+  -h, --help        Show this help
+
+The first run of this revision performs one automatic profile migration. It
+preserves ~/.vscode extension directories, but removes copied Windows session
+state from ~/.config/Code after backing up the complete directory.
+USAGE
+}
+
+for argument in "$@"; do
+    case "$argument" in
+        --help | -h)
+            usage
+            exit 0
+            ;;
+    esac
+done
+unset argument
+
 # shellcheck source=00-common.sh
 source "$SCRIPT_DIR/00-common.sh"
-
-require_gnome_session
-
-command -v code >/dev/null 2>&1 ||
-    fail "Visual Studio Code is not installed. Run scripts/01-install-packages.sh first."
 
 VSCODE_SOURCE="$REPO_ROOT/configs/vscode"
 VSCODE_USER_SOURCE="$VSCODE_SOURCE/User"
 VSCODE_EXTENSION_LIST="$VSCODE_SOURCE/extensions.txt"
-VSCODE_USER_DEST="$HOME/.config/Code/User"
-VSCODE_EXTENSIONS_DEST="$HOME/.vscode/extensions"
-NAUTILUS_DEST="$HOME/.local/share/nautilus-python/extensions"
+VSCODE_CONFIG_ROOT="$(
+    realpath -m -- "${XDG_CONFIG_HOME:-$TARGET_HOME/.config}/Code"
+)"
+VSCODE_USER_DEST="$VSCODE_CONFIG_ROOT/User"
+VSCODE_EXTENSIONS_DEST="$TARGET_HOME/.vscode/extensions"
+NAUTILUS_DEST="$TARGET_HOME/.local/share/nautilus-python/extensions"
 REPORT_DIR="$STATE_DIR/reports"
 REPORT_FILE="$REPORT_DIR/vscode-$RUN_ID.tsv"
 EXTENSION_REPORT="$REPORT_DIR/vscode-$RUN_ID-extensions.txt"
+MIGRATION_MARKER="$STATE_DIR/migrations/vscode-profile-v2.complete"
 EXTENSION_FAILURES=0
+FORCE_PROFILE_REPAIR="${RICE_VSCODE_FORCE_RESET:-0}"
+STOP_RUNNING_CODE="${RICE_VSCODE_STOP_RUNNING:-0}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --repair-profile)
+            FORCE_PROFILE_REPAIR=1
+            shift
+            ;;
+        --stop-running)
+            STOP_RUNNING_CODE=1
+            shift
+            ;;
+        --help | -h)
+            usage
+            exit 0
+            ;;
+        *)
+            fail "Unknown VS Code stage argument: $1"
+            ;;
+    esac
+done
+
+[[ "$FORCE_PROFILE_REPAIR" == "0" || "$FORCE_PROFILE_REPAIR" == "1" ]] ||
+    fail "RICE_VSCODE_FORCE_RESET must be 0 or 1."
+[[ "$STOP_RUNNING_CODE" == "0" || "$STOP_RUNNING_CODE" == "1" ]] ||
+    fail "RICE_VSCODE_STOP_RUNNING must be 0 or 1."
+
+require_gnome_session
+require_command pgrep
+
+command -v code >/dev/null 2>&1 ||
+    fail "Visual Studio Code is not installed. Run scripts/01-install-packages.sh first."
+
+CODE_COMMAND="$(command -v code)"
+CODE_REAL_PATH="$(readlink -f -- "$CODE_COMMAND")"
+CODE_PACKAGE_OWNER="$(dpkg-query -S "$CODE_REAL_PATH" 2>/dev/null || true)"
+if ! apt_package_installed code; then
+    fail "The Microsoft APT package 'code' is not installed, although $CODE_COMMAND exists."
+fi
+if ! grep -Eq '^code(:[^:]+)?:' <<<"$CODE_PACKAGE_OWNER"; then
+    fail "The active code command is not owned by Microsoft's APT package: $CODE_REAL_PATH"
+fi
+
+code_process_ids() {
+    pgrep -u "$(id -u)" -x code 2>/dev/null || true
+}
+
+stop_running_code_if_requested() {
+    local -a process_ids=()
+    local -a remaining=()
+    local attempt=0
+    local pid=""
+
+    mapfile -t process_ids < <(code_process_ids)
+    ((${#process_ids[@]} > 0)) || return 0
+
+    if [[ "$STOP_RUNNING_CODE" != "1" ]]; then
+        fail "VS Code is still running (PID(s): ${process_ids[*]}). Close it, or rerun this stage with --stop-running."
+    fi
+
+    log "Requesting a graceful stop of this user's VS Code processes: ${process_ids[*]}"
+    kill -TERM "${process_ids[@]}" 2>/dev/null || true
+
+    for attempt in {1..50}; do
+        remaining=()
+        for pid in "${process_ids[@]}"; do
+            kill -0 "$pid" 2>/dev/null && remaining+=("$pid")
+        done
+        ((${#remaining[@]} == 0)) && return 0
+        sleep 0.1
+    done
+
+    fail "VS Code did not stop cleanly (remaining PID(s): ${remaining[*]}). No profile files were changed."
+}
+
+repair_vscode_profile_once() {
+    local needs_repair=0
+    local resolved_home=""
+
+    [[ -f "$MIGRATION_MARKER" ]] || needs_repair=1
+    [[ "$FORCE_PROFILE_REPAIR" == "1" ]] && needs_repair=1
+    ((needs_repair == 1)) || return 0
+
+    resolved_home="$(realpath -m -- "$TARGET_HOME")"
+    [[ "$VSCODE_CONFIG_ROOT" == "$resolved_home"/* ]] ||
+        fail "Refusing to reset a VS Code profile outside $TARGET_HOME: $VSCODE_CONFIG_ROOT"
+    [[ ! -L "$VSCODE_CONFIG_ROOT" ]] ||
+        fail "Refusing to reset a symlinked VS Code profile: $VSCODE_CONFIG_ROOT"
+
+    stop_running_code_if_requested
+
+    if [[ -e "$VSCODE_CONFIG_ROOT" ]]; then
+        # Older installer revisions could create root-owned files or copy
+        # Windows machine/session state here. Make the user-owned backup
+        # readable, then replace the profile rather than merely copying over it.
+        run_root chown -R "$TARGET_USER:$TARGET_GROUP" "$VSCODE_CONFIG_ROOT"
+        backup_path "$VSCODE_CONFIG_ROOT"
+        rm -rf -- "$VSCODE_CONFIG_ROOT"
+        log "Removed the backed-up, non-portable VS Code user-data profile."
+    fi
+
+    mkdir -p -- "$VSCODE_USER_DEST"
+}
+
+repair_vscode_extension_ownership() {
+    [[ -e "$TARGET_HOME/.vscode" ]] || return 0
+    [[ ! -L "$TARGET_HOME/.vscode" ]] ||
+        fail "Refusing to modify a symlinked VS Code extension root."
+    run_root chown -R "$TARGET_USER:$TARGET_GROUP" "$TARGET_HOME/.vscode"
+}
 
 log "Restoring Visual Studio Code and Nautilus integration."
 mkdir -p "$REPORT_DIR"
 printf 'asset\tpath\tstatus\n' >"$REPORT_FILE"
+printf 'code-launcher\t%s\tpackage-owned\n' \
+    "$CODE_COMMAND -> $CODE_REAL_PATH" >>"$REPORT_FILE"
+
+repair_vscode_profile_once
+repair_vscode_extension_ownership
 
 if [[ -d "$REPO_ROOT/configs/nautilus-python" ]]; then
     backup_path "$NAUTILUS_DEST"
@@ -115,7 +256,9 @@ PY
 sanitize_extension_state
 
 if [[ -f "$VSCODE_EXTENSION_LIST" ]]; then
-    installed_extensions="$(code --list-extensions 2>/dev/null || true)"
+    if ! installed_extensions="$(code --list-extensions 2>>"$LOG_FILE")"; then
+        fail "VS Code's extension CLI could not read its Linux extension state. Review $LOG_FILE."
+    fi
     while IFS= read -r extension_id || [[ -n "$extension_id" ]]; do
         extension_id="${extension_id//$'\r'/}"
         extension_id="$(
@@ -153,9 +296,17 @@ git config --global mergetool.vscode.cmd 'code --wait "$MERGED"'
 git config --global push.default simple
 
 nautilus -q >/dev/null 2>&1 || true
-code --version | head -n 1 | tee -a "$LOG_FILE"
-code --list-extensions --show-versions 2>/dev/null |
-    sort >"$EXTENSION_REPORT" || true
+code_version=""
+if ! code_version="$(code --version 2>>"$LOG_FILE")"; then
+    fail "The installed code launcher failed its version check."
+fi
+IFS= read -r code_version_first_line <<<"$code_version"
+printf '%s\n' "$code_version_first_line" | tee -a "$LOG_FILE"
+if ! code --list-extensions --show-versions 2>>"$LOG_FILE" |
+    sort >"$EXTENSION_REPORT"
+then
+    fail "VS Code could not produce a final extension inventory."
+fi
 
 if [[ -s "$EXTENSION_REPORT" ]]; then
     printf 'vscode-extension-inventory\t%s\twritten\n' \
@@ -173,4 +324,14 @@ if ((EXTENSION_FAILURES > 0)); then
     fi
     warn "$EXTENSION_FAILURES VS Code extension installation(s) failed."
 fi
+
+mkdir -p -- "$(dirname -- "$MIGRATION_MARKER")"
+printf '%s\n' \
+    "migration=vscode-profile-v2" \
+    "completed=$(date --iso-8601=seconds)" \
+    "code=$CODE_COMMAND" \
+    "real_path=$CODE_REAL_PATH" \
+    >"$MIGRATION_MARKER"
+
 log "Visual Studio Code setup is complete."
+log "Launch it with a fresh window using: code --new-window ."

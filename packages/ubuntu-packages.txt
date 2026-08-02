@@ -37,6 +37,7 @@ ca-certificates
 gnupg
 bash-completion
 pkg-config
+procps
 
 # ---------------------------------------------------------------------------
 # pyenv and CPython build dependencies

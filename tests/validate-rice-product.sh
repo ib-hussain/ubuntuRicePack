@@ -55,6 +55,15 @@ done < <(
 )
 pass "all shell scripts parse"
 
+grep -Fq 'command sudo -- "$@"' "$REPO_ROOT/scripts/00-common.sh" ||
+    fail "run_root does not execute a protected argv array through sudo"
+if grep -A25 '^run_root()' "$REPO_ROOT/scripts/00-common.sh" |
+    grep -Eq '^[[:space:]]*(eval|bash[[:space:]]+-c)([[:space:]]|$)'
+then
+    fail "run_root must not evaluate a command string"
+fi
+pass "run_root validates its argv and bypasses shell aliases/functions"
+
 help_output="$(bash "$REPO_ROOT/install-rice.sh" --help)"
 grep -Fq -- '-m, --mode MODE' <<<"$help_output" ||
     fail "installer help does not expose the shortened mode option"
@@ -268,18 +277,33 @@ then
 fi
 grep -Fq 'code --install-extension' "$VSCODE_SETUP" ||
     fail "VS Code extensions are not installed through the supported CLI"
+grep -Fq 'apt_package_installed code' "$VSCODE_SETUP" ||
+    fail "VS Code setup does not verify the Microsoft APT package"
+grep -Fq 'dpkg-query -S "$CODE_REAL_PATH"' "$VSCODE_SETUP" ||
+    fail "VS Code setup does not verify ownership of the active code launcher"
 grep -Fq 'settings.json keybindings.json' "$VSCODE_SETUP" ||
     fail "VS Code setup does not restore the portable user settings"
+grep -Fq 'vscode-profile-v2.complete' "$VSCODE_SETUP" ||
+    fail "VS Code setup lacks its one-time profile migration marker"
+grep -Fq 'backup_path "$VSCODE_CONFIG_ROOT"' "$VSCODE_SETUP" ||
+    fail "VS Code profile repair is not backed up"
+grep -Fq 'rm -rf -- "$VSCODE_CONFIG_ROOT"' "$VSCODE_SETUP" ||
+    fail "VS Code profile repair does not remove captured session state"
+grep -Fq -- '--stop-running' "$VSCODE_SETUP" ||
+    fail "VS Code repair cannot explicitly stop a stale editor process"
+grep -Fq 'code --new-window .' "$VSCODE_SETUP" ||
+    fail "VS Code setup does not report the supported fresh-window launch"
 if LC_ALL=C grep -q $'\r' "$REPO_ROOT/configs/vscode/extensions.txt"; then
     fail "VS Code extension list contains CRLF line endings"
 fi
-pass "VS Code restore excludes captured machine state and uses the official CLI"
+pass "VS Code restore performs a backed-up one-time Linux profile migration"
 
 for package in \
     papirus-icon-theme \
     python3-nautilus \
     ptyxis \
     xdg-terminal-exec \
+    procps \
     audacious \
     audacious-plugins
 do

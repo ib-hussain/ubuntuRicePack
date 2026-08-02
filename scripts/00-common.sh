@@ -138,11 +138,27 @@ make_temp_file() {
 }
 
 run_root() {
+    (($# > 0)) || {
+        printf 'run_root: no command was supplied.\n' >&2
+        return 64
+    }
+
     if [[ "$EUID" -eq 0 ]]; then
-        "$@"
-    else
-        sudo "$@"
+        # `command` bypasses a same-named shell function or alias while still
+        # allowing ordinary builtins such as `test`.
+        command "$@"
+        return
     fi
+
+    command -v sudo >/dev/null 2>&1 || {
+        printf 'run_root: sudo is not installed or is not in PATH.\n' >&2
+        return 127
+    }
+
+    # The explicit `--` prevents a command name beginning with a dash from
+    # being parsed as another sudo option. Keep redirections at the call site;
+    # run_root deliberately executes an argv array, never an eval string.
+    command sudo -- "$@"
 }
 
 as_target_user() {

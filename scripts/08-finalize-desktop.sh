@@ -303,8 +303,14 @@ PY
 
 verify_vscode_health() {
     local extension_inventory=""
+    local migration_marker="$STATE_DIR/migrations/vscode-profile-v2.complete"
     local state_file=""
     local poisoned_state=0
+
+    verify_regular_file \
+        vscode \
+        profile-migration \
+        "$migration_marker"
 
     if extension_inventory="$(code --list-extensions 2>>"$LOG_FILE")"; then
         report_line \
