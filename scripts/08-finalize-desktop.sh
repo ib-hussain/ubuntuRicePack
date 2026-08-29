@@ -449,7 +449,7 @@ verify_ptyxis_configuration() {
             org.gnome.Ptyxis.Profile \
             "/org/gnome/Ptyxis/Profiles/$profile_uuid/" \
             palette \
-            "'IB Glass'"
+            "'IB-Glass'"
     else
         record_failure ptyxis default-profile-uuid set unset
     fi

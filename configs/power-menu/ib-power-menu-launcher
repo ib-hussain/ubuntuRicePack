@@ -1,0 +1,11 @@
+#!/bin/bash
+LOG_FILE="$HOME/.local/state/ubuntuRicePack/logs/power-profiles.log"
+mkdir -p "$(dirname "$LOG_FILE")"
+
+echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Power menu launched" >> "$LOG_FILE"
+/home/ibrahim/.local/bin/ib-power-menu
+status=$?
+echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Power menu exited with status $status" >> "$LOG_FILE"
+
+# Keep terminal open after menu exits
+read -r -p "Press Enter to close this window..." _

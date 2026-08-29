@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+MODE="${1:-}"
+INVOKING_USER="${SUDO_USER:-$USER}"
+USER_HOME=$(getent passwd "$INVOKING_USER" | cut -d: -f6)
+STATE_DIR="$USER_HOME/.local/state/ubuntuRicePack"
+LOG_DIR="$STATE_DIR/logs"
+LOG_FILE="$LOG_DIR/power-profiles.log"
+
+# Ensure log directory exists and owned by invoking user
+mkdir -p "$LOG_DIR"
+touch "$LOG_FILE"
+if [[ -n "${SUDO_USER:-}" ]]; then
+    chown "$SUDO_USER:$SUDO_USER" "$LOG_FILE" "$LOG_DIR"
+fi
+
+log() {
+    local level="$1"; shift
+    printf '%s [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$level" "$*" >> "$LOG_FILE"
+}
+
+trap 'log "ERROR" "Command failed on line $LINENO: $BASH_COMMAND"' ERR
+
+usage() {
+    echo "Usage: ib-power-mode {ultrasaver|saver|balanced|performance|maximum}"
+    exit 1
+}
+
+[[ -n "$MODE" ]] || { log "ERROR" "No mode specified"; usage; }
+log "INFO" "Power mode change requested: $MODE"
+
+if [[ $EUID -ne 0 ]]; then
+    log "ERROR" "Script must run as root"
+    echo "Please run this script with sudo."
+    exit 1
+fi
+
+PSTATE_ACTIVE=0
+[[ -d /sys/devices/system/cpu/intel_pstate ]] && PSTATE_ACTIVE=1
+
+set_brightness() {
+    local level="$1"
+    log "INFO" "Setting brightness to $level%"
+    if command -v brightnessctl >/dev/null 2>&1; then
+        brightnessctl set "${level}%" >/dev/null
+    else
+        for dev in /sys/class/backlight/*; do
+            [[ -d "$dev" ]] || continue
+            local max=$(cat "$dev/max_brightness")
+            local new=$((max * level / 100))
+            echo "$new" > "$dev/brightness" 2>/dev/null || true
+        done
+    fi
+    log "INFO" "Brightness set"
+}
+
+apply_cpu_settings() {
+    local gov="$1"
+    local min_freq="$2"
+    local max_freq="$3"
+    local epp="$4"
+    local turbo="$5"
+
+    log "INFO" "Setting CPU governor=$gov min=$min_freq max=$max_freq epp=$epp turbo=$turbo"
+    cpupower frequency-set -g "$gov" >/dev/null || log "WARN" "Failed to set governor $gov"
+
+    [[ -n "$min_freq" ]] && cpupower frequency-set -d "$min_freq" >/dev/null || log "WARN" "Failed to set min freq"
+    [[ -n "$max_freq" ]] && cpupower frequency-set -u "$max_freq" >/dev/null || log "WARN" "Failed to set max freq"
+
+    if [[ "$PSTATE_ACTIVE" -eq 1 ]]; then
+        if [[ "$turbo" == "on" ]]; then
+            echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
+        else
+            echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo
+        fi
+    else
+        if [[ -f /sys/devices/system/cpu/cpufreq/boost ]]; then
+            if [[ "$turbo" == "on" ]]; then
+                echo 1 > /sys/devices/system/cpu/cpufreq/boost
+            else
+                echo 0 > /sys/devices/system/cpu/cpufreq/boost
+            fi
+        fi
+    fi
+
+    if [[ -f /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference ]]; then
+        echo "$epp" | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference >/dev/null
+    fi
+    log "INFO" "CPU settings applied"
+}
+
+apply_disk_apm() {
+    local level="$1"
+    log "INFO" "Setting disk APM to $level"
+    for dev in /dev/sd?; do
+        [[ -b "$dev" ]] || continue
+        hdparm -B "$level" "$dev" >/dev/null 2>&1 || true
+    done
+    log "INFO" "Disk APM set"
+}
+
+apply_io_scheduler() {
+    local scheduler="$1"
+    log "INFO" "Setting IO scheduler to $scheduler"
+    for dev in /sys/block/sd?/queue/scheduler; do
+        [[ -f "$dev" ]] || continue
+        echo "$scheduler" > "$dev" 2>/dev/null || true
+    done
+    log "INFO" "IO scheduler set"
+}
+
+apply_idle_states() {
+    local enable="$1"   # "1" to disable, "0" to enable
+    log "INFO" "Setting idle states disable=$enable"
+    for state in /sys/devices/system/cpu/cpu*/cpuidle/state*/disable; do
+        echo "$enable" > "$state" 2>/dev/null || true
+    done
+    log "INFO" "Idle states set"
+}
+
+apply_swappiness() {
+    local value="$1"
+    log "INFO" "Setting swappiness to $value"
+    sysctl -w vm.swappiness="$value" >/dev/null
+    log "INFO" "Swappiness set"
+}
+
+case "$MODE" in
+    ultrasaver)
+        log "INFO" "Applying Ultra Battery Saver"
+        set_brightness 1
+        apply_cpu_settings powersave 800MHz 1.5GHz power off
+        apply_disk_apm 128
+        apply_io_scheduler "kyber"
+        apply_idle_states 0
+        apply_swappiness 10
+        log "INFO" "Ultra Battery Saver mode applied."
+        ;;
+    saver)
+        log "INFO" "Applying Battery Saver"
+        set_brightness 50
+        apply_cpu_settings powersave 800MHz 2.5GHz balance_power off
+        apply_disk_apm 128
+        apply_io_scheduler "bfq"
+        apply_idle_states 0
+        apply_swappiness 10
+        log "INFO" "Battery Saver mode applied."
+        ;;
+    balanced)
+        log "INFO" "Applying Balanced"
+        set_brightness 80
+        apply_cpu_settings powersave "" "" balance_power on
+        apply_disk_apm 192
+        apply_io_scheduler "bfq"
+        apply_idle_states 0
+        apply_swappiness 60
+        log "INFO" "Balanced mode applied."
+        ;;
+    performance)
+        log "INFO" "Applying Performance"
+        set_brightness 100
+        apply_cpu_settings performance "" "" performance on
+        apply_disk_apm 254
+        apply_io_scheduler "mq-deadline"
+        apply_idle_states 0
+        apply_swappiness 10
+        log "INFO" "Performance mode applied."
+        ;;
+    maximum)
+        log "INFO" "Applying Maximum Performance"
+        set_brightness 100
+        max_khz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq)
+        cpupower frequency-set -g performance >/dev/null || true
+        cpupower frequency-set -d "${max_khz}kHz" -u "${max_khz}kHz" >/dev/null || true
+        if [[ "$PSTATE_ACTIVE" -eq 1 ]]; then
+            echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
+        fi
+        echo "performance" | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference >/dev/null
+        apply_disk_apm 255
+        apply_io_scheduler "none"
+        apply_idle_states 1
+        apply_swappiness 0
+        for dev in /sys/bus/pci/devices/*/power/control; do echo on > "$dev" 2>/dev/null || true; done
+        log "INFO" "Maximum Performance mode applied. Fans may spin up."
+        ;;
+    *)
+        log "ERROR" "Invalid mode: $MODE"
+        usage
+        ;;
+esac
+
+log "INFO" "Power mode switch completed successfully."

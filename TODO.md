@@ -1,0 +1,5 @@
+- Clock wigdet on dock
+- pin power profiles menu to dock
+- seperate chrome windows as seperate windows not part of the same app but as different apps so t is easier to navigate with keyboard
+- fix screen freeze errors
+- solve issues

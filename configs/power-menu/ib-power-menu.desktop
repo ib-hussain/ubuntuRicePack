@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Power Mode Switcher
+Comment=Switch between power profiles
+Exec=ptyxis -- bash --norc -c "/home/ibrahim/.local/bin/ib-power-menu-launcher"
+Icon=preferences-system-power
+Terminal=true
+Categories=Settings;System;
+StartupNotify=false
+

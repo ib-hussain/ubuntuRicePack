@@ -1,45 +1,52 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#!/bin/bash
+LOG_FILE="$HOME/.local/state/ubuntuRicePack/logs/power-profiles.log"
+mkdir -p "$(dirname "$LOG_FILE")"
+echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Displaying power menu" >> "$LOG_FILE"
 
-if ! command -v zenity >/dev/null 2>&1; then
-    printf 'ib-power-menu: zenity is not installed.\n' >&2
-    exit 1
-fi
+while true; do
+    echo "=============================="
+    echo "   Power Mode Switcher"
+    echo "=============================="
+    echo "1) Ultra Battery Saver"
+    echo "2) Battery Saver"
+    echo "3) Balanced"
+    echo "4) Performance"
+    echo "5) Maximum Performance"
+    echo "6) Quit"
+    echo ""
+    read -r -p "Enter choice (1-6): " choice
 
-if ! command -v ib-power-mode >/dev/null 2>&1; then
-    printf 'ib-power-menu: ib-power-mode is not installed or not on PATH.\n' >&2
-    exit 1
-fi
-
-choice="$(
-    zenity \
-        --list \
-        --title="Power Profile" \
-        --column="Mode" \
-        "Battery Saver" \
-        "Balanced" \
-        "Performance" \
-        "Maximum Performance"
-)" || exit 0
-
-case "$choice" in
-    "Battery Saver")
-        ib-power-mode set powersaver
-        ;;
-    "Balanced")
-        ib-power-mode set balanced
-        ;;
-    "Performance")
-        ib-power-mode set performance
-        ;;
-    "Maximum Performance")
-        ib-power-mode set maximum
-        ;;
-    "")
-        exit 0
-        ;;
-    *)
-        printf 'ib-power-menu: unsupported power profile: %s\n' "$choice" >&2
-        exit 2
-        ;;
-esac
+    case "$choice" in
+        1)
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] User selected Ultra Battery Saver" >> "$LOG_FILE"
+            sudo ib-power-mode ultrasaver
+            ;;
+        2)
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] User selected Battery Saver" >> "$LOG_FILE"
+            sudo ib-power-mode saver
+            ;;
+        3)
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] User selected Balanced" >> "$LOG_FILE"
+            sudo ib-power-mode balanced
+            ;;
+        4)
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] User selected Performance" >> "$LOG_FILE"
+            sudo ib-power-mode performance
+            ;;
+        5)
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] User selected Maximum Performance" >> "$LOG_FILE"
+            sudo ib-power-mode maximum
+            ;;
+        6)
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] User quit power menu" >> "$LOG_FILE"
+            echo "Goodbye!"
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice. Press Enter to continue..."
+            read -r
+            ;;
+    esac
+    echo ""
+    read -r -p "Press Enter to return to menu..."
+done
