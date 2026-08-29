@@ -5,20 +5,20 @@
 #   info -f grub -n 'Simple configuration'
 
 GRUB_DEFAULT=saved
-GRUB_TIMEOUT=0
+GRUB_TIMEOUT=5
 GRUB_DISTRIBUTOR="Ubuntu"
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"
 GRUB_CMDLINE_LINUX=""
 
 # Preload both GPT and MBR modules so that they are not missed
-#GRUB_PRELOAD_MODULES="part_gpt part_msdos"
+GRUB_PRELOAD_MODULES="part_gpt part_msdos"
 
 # Uncomment to enable booting from LUKS encrypted devices
 #GRUB_ENABLE_CRYPTODISK=y
 
 # Set to 'countdown' or 'hidden' to change timeout behavior,
 # press ESC key to display menu.
-GRUB_TIMEOUT_STYLE='hidden'
+GRUB_TIMEOUT_STYLE=menu
 
 # Uncomment to use basic console
 GRUB_TERMINAL_INPUT=console
@@ -54,7 +54,7 @@ GRUB_INIT_TUNE="480 440 1"
 GRUB_SAVEDEFAULT=true
 
 # Uncomment to disable submenus in boot menu
-GRUB_DISABLE_SUBMENU=y
+GRUB_DISABLE_SUBMENU=false
 
 # If your computer has multiple operating systems installed, then you
 # probably want to run os-prober. However, if your computer is a host
@@ -72,4 +72,4 @@ GRUB_BADRAM="0x01234567,0xfefefefe,0x89abcdef,0xefefefef"
 #GRUB_TERMINAL=console
 
 # Uncomment to disable generation of recovery mode menu entries
-GRUB_DISABLE_RECOVERY="true"
+GRUB_DISABLE_RECOVERY="false"

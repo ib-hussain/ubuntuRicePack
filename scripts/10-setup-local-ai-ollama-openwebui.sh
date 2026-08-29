@@ -7,7 +7,7 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ubuntu-rice-pack"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ubuntuRicePack"
 mkdir -p "$STATE_DIR"
 LOG_FILE="${LOG_FILE:-$STATE_DIR/local-ai-$(date +%Y%m%d-%H%M%S).log}"
 
@@ -136,11 +136,9 @@ wait_for_url http://127.0.0.1:11434/api/tags 60 ||
 # Only these two models are installed. Override the tags without editing the
 # script by setting OLLAMA_MODEL_1 and/or OLLAMA_MODEL_2.
 OLLAMA_MODEL_1="${OLLAMA_MODEL_1:-gemma3:1b}"
-OLLAMA_MODEL_2="${OLLAMA_MODEL_2:-deepseek-r1}"
-for model_name in "$OLLAMA_MODEL_1" "$OLLAMA_MODEL_2"; do
-    log "Pulling Ollama model: $model_name"
-    ollama pull "$model_name"
-done
+# OLLAMA_MODEL_2="${OLLAMA_MODEL_2:-deepseek-r1:1.5b}"
+log "Pulling Ollama model: $OLLAMA_MODEL_1"
+ollama pull "$OLLAMA_MODEL_1"
 
 OPENWEBUI_PORT="${OPENWEBUI_PORT:-3000}"
 [[ "$OPENWEBUI_PORT" =~ ^[0-9]+$ ]] &&
@@ -255,6 +253,6 @@ DESKTOP
 create_openwebui_launcher
 
 log "Local AI setup is complete."
-log "Models: $OLLAMA_MODEL_1, $OLLAMA_MODEL_2"
+log "Models: $OLLAMA_MODEL_1 #, $OLLAMA_MODEL_2"
 log "Open WebUI: http://127.0.0.1:$OPENWEBUI_PORT"
 log "Docker group membership becomes available after your next login."
