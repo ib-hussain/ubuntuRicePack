@@ -59,3 +59,5 @@ bash scripts/10-setup-local-ai-ollama-openwebui.sh
 See [APPLY-INSTRUCTIONS.md](installation/APPLY-INSTRUCTIONS.md) for operating instructions
 and [ENGINEERING-AUDIT.md](tests/ENGINEERING-AUDIT.md) for the supplied-extension
 analysis, root causes, provenance, conflict policy, and validation record.
+
+See [ISSUES.md](ISSUES.md) for the various issues that can be encountered while installation.
