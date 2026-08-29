@@ -1,0 +1,149 @@
+Aug 26 00:40:04 ibLaptop systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+Aug 26 00:40:04 ibLaptop systemd[1]: sysstat-collect.service: Deactivated successfully.
+Aug 26 00:40:03 ibLaptop systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+Aug 26 00:39:12 ibLaptop google-chrome.desktop[41842]: [41834:41834:0826/003912.107193:ERROR:extensions/browser/service_worker/service_worker_task_queue.cc:4>
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 26 00:39:09 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Multiple Correctable error message received from 0000:00:1c.5
+Aug 26 00:39:09 ibLaptop kernel: aer_ratelimit: 480 callbacks suppressed
+Aug 26 00:39:08 ibLaptop google-chrome.desktop[41842]: [41834:41834:0826/003908.863391:ERROR:extensions/browser/service_worker/service_worker_task_queue.cc:4>
+Aug 26 00:39:04 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 26 00:39:04 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 26 00:39:04 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 26 00:39:04 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+
+Aug 29 02:05:29 ibLaptop systemd[1]: NetworkManager-dispatcher.service: Deactivated successfully.
+Aug 29 02:05:19 ibLaptop NetworkManager[1469]: <info>  [1787951119.1633] manager: NetworkManager state is now CONNECTED_GLOBAL
+Aug 29 02:05:17 ibLaptop systemd[1]: Started NetworkManager-dispatcher.service - Network Manager Script Dispatcher Service.
+Aug 29 02:05:17 ibLaptop dbus-daemon[1239]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
+Aug 29 02:05:17 ibLaptop dbus-daemon[1239]: [system] Activating via systemd: service name='org.freedesktop.nm_dispatcher' unit='dbus-org.freedesktop.nm-dispa>
+Aug 29 02:05:17 ibLaptop systemd[1]: Starting NetworkManager-dispatcher.service - Network Manager Script Dispatcher Service...
+Aug 29 02:05:17 ibLaptop NetworkManager[1469]: <info>  [1787951117.6115] manager: NetworkManager state is now CONNECTED_SITE
+Aug 29 02:01:43 ibLaptop gsd-power[3382]: Failed to acquire idle monitor proxy: Timeout was reached
+Aug 29 02:01:43 ibLaptop gsd-power[3382]: Failed to acquire idle monitor proxy: Timeout was reached
+Aug 29 02:01:43 ibLaptop gsd-power[3382]: Failed to acquire idle monitor proxy: Timeout was reached
+Aug 29 02:01:20 ibLaptop bluetoothd[1236]: /org/bluez/hci0/dev_41_42_32_68_A9_BF/fd0: fd(41) ready
+Aug 29 02:01:19 ibLaptop systemd-logind[1326]: Watching system buttons on /dev/input/event15 (TWS V5.1 (AVRCP))
+Aug 29 02:01:19 ibLaptop kernel: input: TWS V5.1 (AVRCP) as /devices/virtual/input/input18
+Aug 29 02:01:19 ibLaptop gsd-media-keys[3380]: Can't find input for stream-id 70
+Aug 29 02:01:15 ibLaptop gsd-media-keys[3380]: Unable to get default sink
+Aug 29 02:01:15 ibLaptop gsd-media-keys[3380]: Unable to get default source
+Aug 29 02:01:15 ibLaptop pipewire[3022]: pw.node: (bluez_output.41_42_32_68_A9_BF.1-94) idle -> error (Received error event)
+Aug 29 02:01:15 ibLaptop dbus-daemon[1239]: [system] Rejected send message, 0 matched rules; type="method_return", sender=":1.83" (uid=1000 pid=3029 comm="/u>
+Aug 29 02:01:15 ibLaptop wireplumber[3029]: spa.bluez5: Failure in Bluetooth audio transport /org/bluez/hci0/dev_41_42_32_68_A9_BF/sep1/fd0
+Aug 29 02:01:15 ibLaptop wireplumber[3029]: pw.node: (bluez_output.41_42_32_68_A9_BF.1-94) running -> error (Received error event)
+Aug 29 02:01:15 ibLaptop wireplumber[3029]: spa.bluez5.sink.media: 0x60c386891de8: connection (/org/bluez/hci0/dev_41_42_32_68_A9_BF/sep1/fd0) terminated une>
+Aug 29 02:01:15 ibLaptop bluetoothd[1236]: src/profile.c:ext_io_disconnected() Unable to get io data for Hands-Free Voice gateway: getpeername: Transport end>
+Aug 29 02:00:07 ibLaptop systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+Aug 29 02:00:07 ibLaptop systemd[1]: sysstat-collect.service: Deactivated successfully.
+Aug 29 02:00:07 ibLaptop systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+Aug 29 01:59:14 ibLaptop sudo[75523]: pam_unix(sudo:session): session closed for user root
+Aug 29 01:59:12 ibLaptop sudo[75523]: ibrahim : TTY=/dev/pts/1 ; PWD=/home/ibrahim ; USER=root ; COMMAND=/usr/bin/apt --fix-broken install
+Aug 29 01:59:12 ibLaptop sudo[75523]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 01:58:28 ibLaptop kernel: workqueue: delayed_fput hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+Aug 29 01:58:08 ibLaptop sudo[69789]: pam_unix(sudo:session): session closed for user root
+Aug 29 01:57:42 ibLaptop sudo[69789]: ibrahim : TTY=/dev/pts/1 ; PWD=/home/ibrahim ; USER=root ; COMMAND=/usr/bin/dpkg --configure -a
+Aug 29 01:57:42 ibLaptop sudo[69789]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 01:57:30 ibLaptop sudo[69683]: pam_unix(sudo:session): session closed for user root
+Aug 29 01:57:30 ibLaptop sudo[69683]: ibrahim : TTY=/dev/pts/1 ; PWD=/home/ibrahim ; USER=root ; COMMAND=/usr/bin/rm -f /boot/vmlinuz.old /boot/initrd.img.old
+Aug 29 01:57:30 ibLaptop sudo[69683]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 01:57:13 ibLaptop sudo[69508]: pam_unix(sudo:session): session closed for user root
+Aug 29 01:57:13 ibLaptop sudo[69508]: ibrahim : TTY=/dev/pts/1 ; PWD=/home/ibrahim ; USER=root ; COMMAND=/usr/bin/rm -f /boot/config-7.0.0-14-generic
+Aug 29 01:57:13 ibLaptop sudo[69508]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 01:57:09 ibLaptop sudo[69453]: pam_unix(sudo:session): session closed for user root
+Aug 29 01:57:09 ibLaptop sudo[69453]: ibrahim : TTY=/dev/pts/1 ; PWD=/home/ibrahim ; USER=root ; COMMAND=/usr/bin/rm -f /boot/initrd.img-7.0.0-14-generic
+Aug 29 01:57:09 ibLaptop sudo[69453]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 01:57:05 ibLaptop sudo[69396]: pam_unix(sudo:session): session closed for user root
+Aug 29 01:57:05 ibLaptop sudo[69396]: ibrahim : TTY=/dev/pts/1 ; PWD=/home/ibrahim ; USER=root ; COMMAND=/usr/bin/rm -f /boot/System.map-7.0.0-14-generic
+Aug 29 01:57:05 ibLaptop sudo[69396]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 01:57:00 ibLaptop sudo[69338]: pam_unix(sudo:session): session closed for user root
+Aug 29 01:57:00 ibLaptop sudo[69338]: ibrahim : TTY=/dev/pts/1 ; PWD=/home/ibrahim ; USER=root ; COMMAND=/usr/bin/rm -f /boot/vmlinuz-7.0.0-14-generic
+Aug 29 01:57:00 ibLaptop sudo[69338]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 01:54:39 ibLaptop code.desktop[16655]: [main 2026-08-28T20:54:39.476Z] update#setState idle
+
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 29 04:30:41 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:30:41 ibLaptop kernel: aer_ratelimit: 800 callbacks suppressed
+Aug 29 04:30:36 ibLaptop systemd[2690]: app-gnome-ptyxis-104274.scope: Consumed 9.762s CPU time over 15min 34.480s wall clock time, 125.5M memory peak.
+Aug 29 04:30:36 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:30:36 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:30:36 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 29 04:30:36 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:30:36 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 29 04:30:36 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 29 04:30:36 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:30:36 ibLaptop kernel: aer_ratelimit: 379 callbacks suppressed
+Aug 29 04:30:36 ibLaptop systemd[2690]: ptyxis-spawn-e8173c31-5b3d-4636-8deb-4041b99ab84d.scope: Consumed 2.785s CPU time over 15min 31.786s wall clock time,>
+Aug 29 04:30:31 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:30:31 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:30:16 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 29 04:30:16 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:30:16 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:30:16 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 29 04:30:16 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:30:16 ibLaptop kernel: aer_ratelimit: 438 callbacks suppressed
+Aug 29 04:30:13 ibLaptop systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+Aug 29 04:30:13 ibLaptop systemd[1]: sysstat-collect.service: Deactivated successfully.
+Aug 29 04:30:13 ibLaptop systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+Aug 29 04:30:11 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:30:11 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:29:31 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:29:31 ibLaptop kernel: aer_ratelimit: 290 callbacks suppressed
+Aug 29 04:29:29 ibLaptop sudo[119086]: pam_unix(sudo:session): session closed for user root
+Aug 29 04:29:29 ibLaptop sudo[119086]: ibrahim : TTY=/dev/pts/0 ; PWD=/etc/grub.d ; USER=root ; COMMAND=/usr/bin/grep -n menuentry\\|submenu /boot/grub/grub.>
+Aug 29 04:29:29 ibLaptop sudo[119086]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 04:29:26 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:29:26 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:29:26 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 29 04:29:16 ibLaptop kernel: pcieport 0000:00:1c.5:   device [8086:9d15] error status/mask=00000001/00002000
+Aug 29 04:29:16 ibLaptop kernel: pcieport 0000:00:1c.5: PCIe Bus Error: severity=Correctable, type=Physical Layer, (Receiver ID)
+Aug 29 04:29:16 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:29:16 ibLaptop sudo[118372]: pam_unix(sudo:session): session closed for user root
+Aug 29 04:29:16 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:29:06 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:29:06 ibLaptop kernel: aer_ratelimit: 295 callbacks suppressed
+Aug 29 04:29:01 ibLaptop sudo[118372]: ibrahim : TTY=/dev/pts/0 ; PWD=/etc/grub.d ; USER=root ; COMMAND=/usr/sbin/update-grub
+Aug 29 04:29:01 ibLaptop sudo[118372]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 04:29:01 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 29 04:28:56 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Multiple Correctable error message received from 0000:00:1c.5
+Aug 29 04:28:56 ibLaptop kernel: aer_ratelimit: 417 callbacks suppressed
+Aug 29 04:28:51 ibLaptop sudo[118283]: pam_unix(sudo:session): session closed for user root
+Aug 29 04:28:51 ibLaptop sudo[118283]: ibrahim : TTY=/dev/pts/0 ; PWD=/etc/grub.d ; USER=root ; COMMAND=/usr/bin/cat /etc/grub.d/40_custom
+Aug 29 04:28:51 ibLaptop sudo[118283]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 04:28:50 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5 (no details found
+Aug 29 04:28:50 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:28:35 ibLaptop kernel: aer_ratelimit: 228 callbacks suppressed
+Aug 29 04:28:35 ibLaptop sudo[117719]: pam_unix(sudo:session): session closed for user root
+Aug 29 04:28:31 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
+Aug 29 04:28:20 ibLaptop kernel: pcieport 0000:00:1c.5: AER: Correctable error message received from 0000:00:1c.5
+Aug 29 04:28:20 ibLaptop kernel: aer_ratelimit: 277 callbacks suppressed
+Aug 29 04:28:16 ibLaptop sudo[117719]: ibrahim : TTY=/dev/pts/0 ; PWD=/etc/grub.d ; USER=root ; COMMAND=/usr/bin/nano /etc/grub.d/40_custom
+Aug 29 04:28:16 ibLaptop sudo[117719]: pam_unix(sudo:session): session opened for user root(uid=0) by ibrahim(uid=1000)
+Aug 29 04:28:15 ibLaptop kernel: pcieport 0000:00:1c.5:    [ 0] RxErr                  (First)
