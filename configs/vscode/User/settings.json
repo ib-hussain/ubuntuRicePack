@@ -9,6 +9,7 @@
   "cmake.options.statusBarVisibility": "visible",
   "explorer.confirmDelete": false,
   "makefile.configureOnOpen": true,
+  "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe",
   "C_Cpp.default.compilerPath": "/usr/bin/g++",
   "cmake.pinnedCommands": [
     "workbench.action.tasks.configureTaskRunner",
@@ -17,8 +18,8 @@
   "notebook.formatOnSave.enabled": true,
   "explorer.confirmDragAndDrop": false,
   "github.copilot.enable": {
-    "*": true,
-    "plaintext": true,
+    "*": false,
+    "plaintext": false,
     "markdown": true,
     "scminput": false,
     "python": true,
@@ -28,7 +29,6 @@
   "liveServer.settings.donotVerifyTags": true,
   "liveServer.settings.donotShowInfoMsg": true,
   "prettier.embeddedLanguageFormatting": "off",
-  "editor.minimap.maxColumn": 50,
   "git.openRepositoryInParentFolders": "always",
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
@@ -66,11 +66,30 @@
   "pgsql.serverGroups": [
     {
       "name": "Servers",
-      "id": "3C7135C5-122B-458C-9D87-B8F26706EA2F",
+      "id": "3C7135C5-122B-458C-9D87-B8F25B06EA2F",
       "isDefault": true
     }
   ],
-  "pgsql.connections": [],
+  "pgsql.connections": [
+    {
+      "id": "167052E2-91BE-40A3-A528-B9A60166AA2C",
+      "groupId": "3C7135C5-122B-458C-9D87-B8F25B06EA2F",
+      "authenticationType": "SqlLogin",
+      "connectTimeout": 15,
+      "applicationName": "vscode-pgsql",
+      "clientEncoding": "utf8",
+      "sslmode": "require",
+      "savePassword": true,
+      "server": "aws-0-eu-west-3.pooler.supabase.com",
+      "user": "postgres.kumqhytmymzmbywlwepz",
+      "port": "6543",
+      "database": "postgres",
+      "password": "",
+      "profileName": "aws-0-eu-west-3.pooler.supabase.com, postgres (postgres.kumqhytmymzmbywlwepz)",
+      "sshPassword": "",
+      "expiresOn": 0
+    }
+  ],
   "diffEditor.codeLens": true,
   "pgsql.enableQueryHistoryCapture": false,
   "explorer.confirmPasteNative": false,
@@ -84,6 +103,9 @@
     "{hexdiff}:/**/*.*": "hexEditor.hexedit",
     "*.o": "hexEditor.hexedit"
   },
+  "security.allowedUNCHosts": [
+    "wsl.localhost"
+  ],
   "editor.multiCursorLimit": 100000,
   "files.autoSave": "afterDelay",
   "liveServer.settings.port": 0,
@@ -108,21 +130,55 @@
   "dataWrangler.experiments.datatypes.pyspark": true,
   "dataWrangler.experiments.autoDetectCsvDelimiter": true,
   "dataWrangler.experiments.fastCsvParsing": true,
-  "workbench.colorTheme": "Visual Studio 2017 Dark - C++",
-  "python.terminal.useEnvFile": true,
-  "workbench.editor.enablePreview": false,
-  "python.analysis.typeCheckingMode": "basic",
-  "files.watcherExclude": {
-    "**/.git/objects/**": true,
-    "**/.git/subtree-cache/**": true,
-    "**/node_modules/**": true,
-    "**/.venv/**": true,
-    "**/venv/**": true
+  // "workbench.colorTheme": "Visual Studio 2017 Light - C++",
+  "workbench.colorCustomizations": {
+    "editor.background": "#21252e",
+    "editor.lineHighlightBackground":"#1d6291",
+    
+    "activityBar.background":"#000000",
+
+    "minimap.background": "#1a1d24",
+    "minimap.selectionHighlight": "#1d6291",
+    "minimap.errorHighlight": "#ff0000",
+    "minimap.warningHighlight": "#c300ff",
+    "minimapSlider.background": "#34a0e73b",
+
+    "editorGutter.background":"#21252e",
+    "editorLineNumber.foreground":"#50b9fff1",
+    "editorLineNumber.activeForeground":"#ffffff",
+
+    "tab.activeBackground":"#000000",
+    "tab.activeForeground": "#ffffff",
+    "tab.border":"#000000",
+
+    "titleBar.activeForeground":"#ffffff",
+    "titleBar.inactiveBackground":"#007acc73",
+    "titleBar.activeBackground":"#007acc",
+
+    "statusBar.background": "#007acc",
+    "statusBar.foreground": "#ffffff",
+    "statusBar.noFolderBackground": "#007acc",
+    "statusBar.debuggingBackground": "#007acc"
   },
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/.git": true,
-    "**/.venv": true,
-    "**/venv": true
-  }
+  "editor.minimap.showSlider": "always",
+  "editor.minimap.renderCharacters": true,
+  "editor.minimap.maxColumn": 48,
+  "editor.minimap.scale": 1,
+  "editor.minimap.size": "fit",
+
+  "terminal.integrated.fontFamily": "'Noto Sans Mono', monospace",
+  "terminal.integrated.fontSize": 14,
+  "editor.detectIndentation": true,
+  "terminal.integrated.enablePersistentSessions": true,
+  "terminal.integrated.persistentSessionReviveProcess": "onExitAndWindowClose",
+  "terminal.integrated.persistentSessionScrollback": 1000,
+  
+  "yaml.disableSchemaDetection": [  ],
+  "yaml.schemas": {
+    "file:///c%3A/Users/ibrahim/.vscode/extensions/continue.continue-2.1.0-win32-x64/config-yaml-schema.json": [
+      ".continue/**/*.yaml"
+    ]
+  },
+  "chat.viewSessions.orientation": "stacked",
+  "workbench.startupEditor": "none"
 }
