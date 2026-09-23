@@ -9,7 +9,6 @@
   "cmake.options.statusBarVisibility": "visible",
   "explorer.confirmDelete": false,
   "makefile.configureOnOpen": true,
-  "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe",
   "C_Cpp.default.compilerPath": "/usr/bin/g++",
   "cmake.pinnedCommands": [
     "workbench.action.tasks.configureTaskRunner",
@@ -143,6 +142,11 @@
     "minimap.warningHighlight": "#c300ff",
     "minimapSlider.background": "#34a0e73b",
 
+    "commandCenter.inactiveForeground": "#ffffff",
+    "commandCenter.border": "#123456",
+    "commandCenter.foreground": "#ffffff",
+    "commandCenter.activeForeground": "#ffffff",
+
     "editorGutter.background":"#21252e",
     "editorLineNumber.foreground":"#50b9fff1",
     "editorLineNumber.activeForeground":"#ffffff",
@@ -172,10 +176,12 @@
   "terminal.integrated.enablePersistentSessions": true,
   "terminal.integrated.persistentSessionReviveProcess": "onExitAndWindowClose",
   "terminal.integrated.persistentSessionScrollback": 1000,
+  "workbench.editor.enablePreview": false,
+
   
   "yaml.disableSchemaDetection": [  ],
   "yaml.schemas": {
-    "file:///c%3A/Users/ibrahim/.vscode/extensions/continue.continue-2.1.0-win32-x64/config-yaml-schema.json": [
+    "file:///home/ibrahim/.vscode/extensions/continue.continue-2.1.0-win32-x64/config-yaml-schema.json": [
       ".continue/**/*.yaml"
     ]
   },

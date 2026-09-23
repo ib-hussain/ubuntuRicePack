@@ -45,5 +45,39 @@
         "key": "ctrl+shift+l",
         "command": "-selectAllSearchEditorMatches",
         "when": "inSearchEditor" 
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "-workbench.action.browser.quickOpen",
+        "when": "activeEditor == 'workbench.editor.browser'"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "-workbench.action.chat.focusQuestionCarousel",
+        "when": "chatHasQuestionCarousel && inChat"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "-workbench.action.chat.focusConfirmation",
+        "when": "accessibilityModeEnabled && chatIsEnabled && !chatHasQuestionCarousel"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "-workbench.action.openAgentsWindow",
+        "when": "config.chat.agent.enabled && !accessibilityModeEnabled && !chatSetupDisabledInWorkspace && !chatSetupHidden && !isAuxiliaryWindow && !isSessionsWindow"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "-markdown.editor.cursorLogicalLineStartSelect",
+        "when": "false"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "-notification.acceptPrimaryAction",
+        "when": "accessibilityModeEnabled && notificationFocus || accessibilityModeEnabled && notificationToastsVisible"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "workbench.action.terminal.selectAll"
     }
 ]

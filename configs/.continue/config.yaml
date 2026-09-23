@@ -1,0 +1,418 @@
+name: Ibrahim-Dev-Stack
+version: 1.2.0
+schema: v1
+
+# ============================================================
+# MODELS
+# ============================================================
+models:
+  # ============================================================
+  # LOCAL - AUTOCOMPLETE
+  # ============================================================
+  - name: Local - Llama 3.2 1B Autocomplete
+    provider: ollama
+    model: llama3.2:1b
+    apiBase: http://127.0.0.1:11434
+    roles:
+      - autocomplete
+    autocompleteOptions:
+      debounceDelay: 500
+      maxPromptTokens: 8192
+      modelTimeout: 30000
+      prefixPercentage: 0.75
+      maxSuffixPercentage: 0.25
+      transform: true
+      onlyMyCode: true
+      useCache: true
+      useImports: true
+      useRecentlyEdited: true
+      useRecentlyOpened: true
+    defaultCompletionOptions:
+      contextLength: 131072
+      maxTokens: 512
+      temperature: 0.1
+      keepAlive: 3600
+    requestOptions:
+      timeout: 3600
+
+  # ============================================================
+  # LOCAL - CHAT / EDIT / APPLY / AGENT
+  # ============================================================
+  - name: Local - Llama 3.2 1B Agent
+    provider: ollama
+    model: llama3.2:1b
+    apiBase: http://127.0.0.1:11434
+    roles:
+      - chat
+      - edit
+      - apply
+    capabilities:
+      - tool_use
+    defaultCompletionOptions:
+      contextLength: 131072
+      maxTokens: 16384
+      temperature: 0.2
+      keepAlive: 3600
+    requestOptions:
+      timeout: 3600
+    chatOptions:
+      baseSystemMessage: |
+        You are a local coding assistant. Explain code precisely,
+        preserve repository conventions, and prefer concrete evidence
+        from the repository over assumptions.
+      baseAgentSystemMessage: |
+        Use the available tools when needed.
+        Inspect relevant files before changing anything.
+        Run terminal commands when useful.
+        Make the smallest coherent change.
+        Create or modify files when required.
+        Run relevant tests or checks after changes.
+        Do not claim that a command succeeded unless you observed its output.
+      basePlanSystemMessage: |
+        Explore the repository before proposing changes.
+        Build a plan grounded in actual files, dependencies,
+        interfaces, tests, and risks.
+
+  # ============================================================
+  # LOCAL - DEEPSEEK REASONING / AGENT
+  # ============================================================
+  - name: Local - DeepSeek R1 1.5B
+    provider: ollama
+    model: deepseek-r1:1.5b
+    apiBase: http://127.0.0.1:11434
+    roles:
+      - chat
+      - edit
+      - apply
+    capabilities:
+      - tool_use
+    defaultCompletionOptions:
+      contextLength: 131072
+      maxTokens: 32768
+      temperature: 0.15
+      reasoning: true
+      keepAlive: 3600
+    requestOptions:
+      timeout: 3600
+    chatOptions:
+      baseSystemMessage: |
+        You are a reasoning-focused local coding assistant.
+        Analyse problems carefully and ground conclusions in available evidence.
+      baseAgentSystemMessage: |
+        Inspect relevant files and runtime evidence before acting.
+        Use tools where useful.
+        Run tests and commands when needed.
+        Verify results rather than assuming success.
+      basePlanSystemMessage: |
+        Explore first, reason about dependencies and risks,
+        then produce a concrete implementation plan.
+
+  # ============================================================
+  # LOCAL - LARGE CODING CHAT
+  # ============================================================
+  - name: Local - CodeQwen 7B
+    provider: ollama
+    model: codeqwen:7b
+    apiBase: http://127.0.0.1:11434
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 65536
+      maxTokens: 16384
+      temperature: 0.15
+      keepAlive: 3600
+    requestOptions:
+      timeout: 3600
+
+  # ============================================================
+  # TOGETHER AI CLOUD
+  # ============================================================
+  # Fast, huge-context repository scout / planner
+  - name: Cloud - DeepSeek V4 Flash Scout
+    provider: together
+    model: deepseek-ai/DeepSeek-V4.1-Flash
+    apiKey: ${{ secrets.TOGETHER_API_KEY }}
+    roles:
+      - chat
+    capabilities:
+      - tool_use
+    defaultCompletionOptions:
+      contextLength: 1000000
+      maxTokens: 16384
+      temperature: 0.1
+    requestOptions:
+      timeout: 900000
+    chatOptions:
+      baseSystemMessage: |
+        You are a fast repository analyst. Find the relevant files, dependencies, data flow,
+        interfaces, risks, and existing patterns before proposing changes.
+      basePlanSystemMessage: |
+        Explore broadly and efficiently. Build a repository map, identify the minimum relevant
+        file set, produce a dependency-aware task plan, list validation steps, and flag uncertainty.
+        Do not modify files in Plan mode.
+      baseAgentSystemMessage: |
+        Prefer inspection and diagnosis. For implementation-heavy work, produce a precise handoff
+        plan suitable for the primary coding agent.
+  # Primary cloud implementation model
+  - name: Cloud - GLM 5.3 Code Agent
+    provider: together
+    model: zai-org/GLM-5.3
+    apiKey: ${{ secrets.TOGETHER_API_KEY }}
+    roles:
+      - chat
+      - edit
+      - apply
+    capabilities:
+      - tool_use
+    defaultCompletionOptions:
+      contextLength: 262144
+      maxTokens: 32768
+      temperature: 0.1
+    requestOptions:
+      timeout: 1200000
+    chatOptions:
+      baseSystemMessage: |
+        You are the primary cloud coding engineer. Work from repository evidence, preserve architecture,
+        implement complete changes, and keep code production-quality.
+      basePlanSystemMessage: |
+        Inspect the codebase and translate the request into a concrete implementation plan with files,
+        interfaces, migrations, tests, and acceptance checks.
+      baseAgentSystemMessage: |
+        Work autonomously but conservatively. Read before editing. Implement complete vertical slices.
+        Create or modify files as needed. Run tests, linters, type checks, and targeted smoke tests.
+        Fix failures caused by your changes. Never claim success without verification.
+  # ============================================================
+  # CLOUD - DEEP REASONING
+  # ============================================================
+  - name: Cloud - GPT OSS 120B Reasoner
+    provider: together
+    model: openai/gpt-oss-120b
+    apiKey: ${{ secrets.TOGETHER_API_KEY }}
+    roles:
+      - chat
+    capabilities:
+      - tool_use
+    defaultCompletionOptions:
+      contextLength: 128000
+      maxTokens: 32768
+      temperature: 0.15
+    requestOptions:
+      timeout: 3600
+    chatOptions:
+      baseSystemMessage: |
+        You are the deep reasoning and architecture specialist.
+        Analyse difficult algorithms, ML methodology,
+        system design, failure modes and trade-offs carefully.
+  # ============================================================
+  # CLOUD - INDEPENDENT REVIEWER
+  # ============================================================
+  - name: Cloud - GLM 5.2 Reviewer
+    provider: together
+    model: zai-org/GLM-5.2
+    apiKey: ${{ secrets.TOGETHER_API_KEY }}
+    roles:
+      - chat
+    capabilities:
+      - tool_use
+    defaultCompletionOptions:
+      contextLength: 512000
+      maxTokens: 32768
+      temperature: 0.05
+    requestOptions:
+      timeout: 3600
+    chatOptions:
+      baseSystemMessage: |
+        You are an independent senior reviewer.
+        Inspect implementation, diff, tests, architecture,
+        security, correctness, ML methodology and edge cases.
+
+      baseAgentSystemMessage: |
+        Treat completed work as unverified.
+        Inspect dependent files and run appropriate checks.
+        Distinguish confirmed defects from optional improvements.
+
+# ============================================================
+# GLOBAL BEHAVIOUR
+# ============================================================
+rules:
+  - Read relevant existing files before proposing or applying non-trivial changes.
+  - Preserve repository architecture, public APIs, naming, formatting, and dependency choices unless the task requires changing them.
+  - Never invent file contents, APIs, command output, test results, metrics, or dataset properties.
+  - For large tasks, first identify scope, dependencies, risks, and validation steps; then implement in coherent increments.
+  - After code changes, run the most relevant available tests, static checks, linters, type checks, or smoke tests.
+  - For data science and ML, explicitly guard against data leakage, invalid splits, target leakage, non-reproducible preprocessing, and misleading metrics.
+  - For experiments, preserve seeds, configuration, dataset provenance, checkpoints, logs, and resumability when relevant.
+  - Prefer reusable modules and tests over notebook-only logic when code is intended for production or repeated use.
+  - When a source document or paper is provided, distinguish what the source states from implementation assumptions or extensions.
+
+# ============================================================
+# CONTEXT PROVIDERS
+# ============================================================
+context:
+  - provider: file
+  - provider: code
+  - provider: diff
+  - provider: currentFile
+  - provider: terminal
+  - provider: open
+    params:
+      onlyPinned: false
+  - provider: clipboard
+  - provider: tree
+  - provider: problems
+  - provider: debugger
+    params:
+      stackDepth: 5
+  - provider: repo-map
+    params:
+      includeSignatures: true
+  - provider: os
+
+# ============================================================
+# REUSABLE PROMPTS / SLASH COMMANDS
+# ============================================================
+prompts:
+  - name: explain
+    description: Explain selected code deeply but clearly
+    prompt: |
+      Explain the selected code from purpose to execution flow. Cover important functions/classes,
+      inputs/outputs, state changes, dependencies, non-obvious language/framework behaviour,
+      complexity, edge cases, and likely failure modes. Use the surrounding repository context where relevant.
+
+  - name: refactor
+    description: Refactor selected code without changing intended behaviour
+    prompt: |
+      Refactor the selected code while preserving intended behaviour and public interfaces.
+      Improve structure, naming, duplication, error handling, testability, and maintainability.
+      Inspect nearby repository conventions first. Explain material changes and verify them.
+
+  - name: debug
+    description: Root-cause a bug using code and runtime evidence
+    prompt: |
+      Diagnose the problem from code, logs, errors, tests, and repository context.
+      Reproduce or narrow the failure when possible. Identify the root cause, not only the symptom.
+      Propose the smallest robust fix, implement it when in Agent mode, and verify the result.
+
+  - name: tests
+    description: Generate strong tests including edge and failure cases
+    prompt: |
+      Build a thorough test suite using the repository's existing framework and conventions.
+      Cover normal behaviour, boundaries, invalid inputs, failure paths, regressions, and meaningful edge cases.
+      Avoid brittle tests. Run the relevant tests when tools are available.
+
+  - name: review
+    description: Senior code and architecture review
+    prompt: |
+      Review the selected changes or current diff as a senior engineer.
+      Check correctness, regressions, architecture, maintainability, security, performance, concurrency,
+      resource handling, error handling, tests, and compatibility. Rank findings by severity and cite exact files/areas.
+
+  - name: repo-audit
+    description: Understand an unfamiliar repository before work
+    prompt: |
+      Inspect the repository broadly before making changes. Map the major directories, entry points,
+      execution flow, configuration, dependencies, tests, build/run commands, data flow, and important abstractions.
+      Identify technical debt or risks relevant to the current task. Produce a concise repository brief and task map.
+
+  - name: repo-plan
+    description: Produce an implementation plan grounded in the codebase
+    prompt: |
+      Explore the repository and produce an implementation plan for the requested change.
+      Name the files likely to change, interfaces affected, new files if needed, migration/backward-compatibility concerns,
+      tests to add, commands to run, risks, and acceptance criteria. Do not invent files you have not verified.
+
+  - name: feature
+    description: Implement a complete feature across the repository
+    prompt: |
+      Implement the requested feature end-to-end. First inspect the existing architecture and similar patterns.
+      Then make the necessary code/config/test/documentation changes, run relevant validation, fix failures introduced
+      by the change, and finish with a concise change summary and any remaining limitations.
+
+  - name: data-science
+    description: Solve a general data-science task reproducibly
+    prompt: |
+      Treat this as a reproducible data-science task. Inspect the data schema and objective first.
+      Validate types, missingness, duplicates, outliers, target definition, leakage risks, and split strategy.
+      Build a clean analysis pipeline with appropriate statistics/visualisations, clear assumptions,
+      reproducible code, and conclusions supported by the data rather than intuition.
+
+  - name: eda
+    description: Perform rigorous exploratory data analysis
+    prompt: |
+      Perform systematic EDA. Inspect schema, distributions, missingness, cardinality, correlations,
+      group effects, temporal structure, anomalies, imbalance, and leakage risks.
+      Generate useful plots/tables and code, explain what each result means, and identify next analytical steps.
+
+  - name: ml-build
+    description: Design and implement a machine-learning pipeline
+    prompt: |
+      Design and implement a rigorous ML pipeline for the stated objective.
+      Define target, features, split protocol, preprocessing fit boundaries, baselines, candidate models,
+      tuning strategy, metrics, calibration where relevant, error analysis, reproducibility, checkpointing,
+      experiment logging, inference path, and tests. Explicitly prevent leakage.
+
+  - name: ml-debug
+    description: Diagnose poor or suspicious ML results
+    prompt: |
+      Audit the ML pipeline for leakage, split contamination, preprocessing errors, metric bugs,
+      label mistakes, class imbalance, distribution shift, over/underfitting, invalid cross-validation,
+      seed instability, and inference/training mismatch. Use evidence from code and results.
+      Propose experiments that discriminate between competing causes.
+
+  - name: dl-build
+    description: Design and implement a deep-learning training pipeline
+    prompt: |
+      Design a complete deep-learning pipeline: dataset/loading, augmentations, architecture,
+      loss, optimiser, scheduler, mixed precision where appropriate, gradient handling,
+      checkpoints, resumability, validation, metrics, early stopping, logging, inference,
+      deterministic controls, memory/performance considerations, and tests/smoke runs.
+
+  - name: dl-debug
+    description: Debug deep-learning training or inference
+    prompt: |
+      Diagnose the deep-learning failure using logs, curves, tensors, shapes, gradients, losses,
+      data pipeline, checkpoints, precision, device placement, and train/eval differences.
+      Check for NaNs, exploding/vanishing gradients, silent broadcasting, leakage, bad normalisation,
+      incorrect masking, label alignment, OOM causes, and checkpoint/resume errors.
+      Implement and verify the smallest robust fix when appropriate.
+
+  - name: paper-to-code
+    description: Turn a paper or PDF into an implementation plan and code
+    prompt: |
+      Use the supplied paper/PDF as the primary source. If the PDF cannot be read directly,
+      use an available local extraction tool or a small Python extractor; ask before installing new dependencies.
+      Extract the method, equations, architecture, algorithms, hyperparameters, datasets, assumptions,
+      evaluation protocol, and implementation-critical details. Separate source-stated facts from inferred choices.
+      Then map the method to repository modules, implement it cleanly, add tests/smoke checks,
+      and document any deviations or missing details.
+
+  - name: reproduce-paper
+    description: Reproduce a research paper as faithfully as possible
+    prompt: |
+      Build a reproducibility plan from the supplied paper and repository context.
+      Create a paper-to-code mapping, list exact and missing hyperparameters, datasets, preprocessing,
+      training/evaluation protocol, seeds, metrics, ablations, expected outputs, and uncertainty.
+      Implement only what is supported or clearly label assumptions. Add checkpoints, resumability,
+      experiment logging, configuration files, and verification steps.
+
+  - name: report
+    description: Generate a technical report from the repository or analysis
+    prompt: |
+      Produce a technically rigorous report grounded in the available code, data, logs, tests, and results.
+      Include objective, methodology, architecture/workflow, evidence, results, limitations, risks,
+      reproducibility details, and concrete next steps. Never invent metrics or completed work.
+
+  - name: optimize
+    description: Optimise code or an ML pipeline without sacrificing correctness
+    prompt: |
+      Profile or reason from evidence before optimising. Check algorithmic complexity, allocations,
+      I/O, vectorisation, batching, caching, parallelism, GPU/CPU transfer, data-loader bottlenecks,
+      model memory, and unnecessary recomputation. Preserve correctness, add benchmarks where useful,
+      and verify that the optimisation actually improves the target metric.
+
+  - name: verify
+    description: Independently verify completed work
+    prompt: |
+      Treat the implementation as untrusted until verified. Inspect the diff and dependent code,
+      run relevant tests/checks, validate requirements one by one, probe edge cases, and identify
+      regressions or unsupported claims. Separate blockers, important issues, and optional improvements.

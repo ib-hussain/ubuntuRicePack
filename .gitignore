@@ -13,6 +13,8 @@ reqs.txt
 *temp.*
 archive-settings/*
 
+.env
+
 # Generated/private installer state and local diagnostics.
 /installation/autoinstall-ready.yaml
 /logss/
